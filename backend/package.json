@@ -1,0 +1,51 @@
+{
+  "name": "restaurant-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:auth": "node scripts/smoke-auth.mjs",
+    "smoke:verification": "node scripts/smoke-verification.mjs",
+    "smoke:business": "node scripts/smoke-business.mjs",
+    "smoke:branch": "node scripts/smoke-branch.mjs",
+    "smoke:order-flow": "node scripts/smoke-order-flow.mjs",
+    "email:check": "node scripts/check-smtp.mjs",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "^17.2.2",
+    "jose": "^6.1.0",
+    "next": "16.3.3",
+    "nodemailer": "^9.0.6",
+    "pg": "^8.16.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.3",
+    "prisma": "7.10.0",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

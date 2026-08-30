@@ -1,0 +1,35 @@
+:root {
+  --color-primary: #c92f08;
+  --color-primary-dark: #9f2406;
+  --color-price: #bd1935;
+  --color-canvas: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-soft: #eef0f2;
+  --color-ink: #171714;
+  --color-muted: #6d6964;
+  --color-line: #e6ddd6;
+  --content-width: 1180px;
+  --radius-md: 12px;
+  --radius-lg: 15px;
+  --shadow-card: 0 2px 7px rgba(39, 26, 18, .08);
+  --shadow-lift: 0 14px 28px rgba(39, 26, 18, .14);
+  --portal-bg: #f3f5f7;
+  --portal-sidebar: #17211d;
+  --portal-sidebar-muted: #9eaaa4;
+  --portal-panel: #ffffff;
+  --portal-panel-soft: #f7f9f8;
+  --portal-border: #dfe5e1;
+  --portal-text: #18211d;
+  --portal-muted: #68746e;
+  --portal-accent: #dc4b22;
+  --portal-accent-soft: #fff0ea;
+  --portal-success: #178251;
+  --portal-success-soft: #e8f6ee;
+  --portal-warning: #b86b08;
+  --portal-warning-soft: #fff4d9;
+  --portal-danger: #bf3434;
+  --portal-danger-soft: #fdecec;
+  --portal-info: #3269a8;
+  --portal-info-soft: #eaf2fb;
+  --portal-shadow: 0 8px 30px rgba(28, 42, 35, .07);
+}

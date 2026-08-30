@@ -1,0 +1,22 @@
+export interface StoreBranch {
+  id: string; businessId: string; code: string; name: string; phone: string | null;
+  addressLine1: string; addressLine2: string | null; city: string; province: string | null;
+  postalCode: string | null; latitude: string; longitude: string; isActive: boolean;
+  isAcceptingOrders: boolean; minimumOrderAmount: string; deliveryRadiusKm: string | null;
+  defaultPrepMinutes: number; timezone: string; isOpenNow: boolean;
+  business: { id: string; name: string; slug: string };
+}
+export interface MenuOption { id: string; name: string; priceDelta: string }
+export interface MenuModifierGroup { id: string; name: string; isRequired: boolean; minSelections: number; maxSelections: number; options: MenuOption[] }
+export interface MenuVariant { id: string; sku: string; name: string; price: string; isDefault: boolean; prepMinutes: number | null }
+export interface MenuItem { id: string; name: string; description: string | null; imageUrl: string | null; isCombo: boolean; itemType: "STANDARD" | "DEAL" | "COMBO"; comboComponents: Array<{ variantId: string; quantity: number; itemName: string; variantName: string }>; variants: MenuVariant[]; modifierGroups: MenuModifierGroup[] }
+export interface MenuCategory { id: string; name: string; slug: string; sortOrder: number; items: MenuItem[] }
+export interface PublicMenu { branchId: string; business: { id: string; name: string; slug: string; currency: string }; categories: MenuCategory[] }
+export interface CartModifier { optionId: string; name: string; quantity: number }
+export interface CartItem { id: string; variantId: string; itemName: string; variantName: string; quantity: number; specialInstructions: string | null; comboComponents: Array<{ variantId: string; quantity: number; itemName: string; variantName: string }>; modifiers: CartModifier[] }
+export interface QuoteLine { cartItemId: string; variantId: string; itemName: string; variantName: string; quantity: number; unitPrice: string; modifierUnit: string; total: string; modifiers: Array<{ id: string; name: string; quantity: number; unitPriceDelta: string; total: string }> }
+export interface CartQuote { subtotal: string; discount: string; tax: string; deliveryFee: string; serviceFee: string; rounding: string; grandTotal: string; currency: string; lines: QuoteLine[]; coupon: { id: string; code: string; discount: string } | null }
+export interface CustomerCart { id: string; branchId: string; addressId: string | null; fulfillmentType: "DELIVERY" | "PICKUP"; status: string; expiresAt: string | null; items: CartItem[]; quote: CartQuote }
+export interface CustomerProfile { id: string; userId: string; firstName: string | null; lastName: string | null; email: string | null; phone: string | null; emailVerifiedAt: string | null; phoneVerifiedAt: string | null }
+export interface CustomerAddress { id: string; label: string | null; recipientName: string; phone: string; addressLine1: string; addressLine2: string | null; city: string; province: string | null; postalCode: string | null; latitude: string; longitude: string; deliveryNote: string | null; isDefault: boolean }
+export interface CustomerOrder { publicId: string; orderNumber: string | null; branchId: string; fulfillmentType: "DELIVERY" | "PICKUP"; status: string; paymentStatus: string; currency: string; customerName: string; customerPhone: string; customerNote: string | null; subtotal: string; discount: string; tax: string; deliveryFee: string; serviceFee: string; rounding: string; grandTotal: string; couponCode: string | null; placedAt: string; confirmedAt: string | null; completedAt: string | null; cancelledAt: string | null; cancellationReason: string | null; branch?: { id: string; name: string; phone: string | null; addressLine1: string; city: string }; items?: Array<{ id: string; itemName: string; variantName: string; sku: string; quantity: number; unitPrice: string; total: string; specialInstructions: string | null; comboComponents: Array<{ variantId: string; quantity: number; itemName: string; variantName: string }>; modifiers: Array<{ groupName: string; optionName: string; quantity: number; unitPriceDelta: string; total: string }> }>; delivery?: Record<string, unknown> | null; payments?: Array<{ id: string; method: string; provider: string | null; status: string; amount: string; currency: string; createdAt: string }>; statusHistory?: Array<{ id: string; fromStatus: string | null; toStatus: string; actorType: string; createdAt: string }> }
