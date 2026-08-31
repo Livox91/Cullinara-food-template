@@ -98,7 +98,8 @@ export async function requireBusinessActor(
   if (
     input.branchId &&
     membership.role !== "OWNER" &&
-    membership.role !== "ADMIN"
+    membership.role !== "ADMIN" &&
+    membership.branchAccess.length > 0
   ) {
     const canAccessBranch = membership.branchAccess.some(
       ({ branchId }) => branchId === input.branchId,

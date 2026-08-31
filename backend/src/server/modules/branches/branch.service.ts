@@ -3,7 +3,6 @@ import type { BusinessActor } from "@/server/auth/authorization";
 import { withTransaction, type PrismaTx } from "@/server/db/transaction";
 import {
   ConflictError,
-  ForbiddenError,
   NotFoundError,
 } from "@/server/http/errors";
 import { auditRepository } from "@/server/modules/audit/audit.repository";
@@ -42,11 +41,9 @@ export const branchService = {
     input: CreateBranchInput,
     requestId: string,
   ) {
-    if (actor.role !== "OWNER" && actor.role !== "ADMIN") {
-      throw new ForbiddenError(
-        "Only owners and administrators can create branches.",
-      );
-    }
+    // The route has already required branch.manage. Keep authorization in the
+    // capability policy so managers are not offered an action that is then
+    // rejected by a second, contradictory role check.
     try {
       return await withTransaction(
         { actorType: "BUSINESS", userId: actor.userId },

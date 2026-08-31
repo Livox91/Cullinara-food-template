@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -37,8 +37,10 @@ interface Props {
 
 export function BusinessPortalShell({ businessId, activePage, data, children }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [branchId, setBranchId] = useState("all");
+  const [branchId, setBranchId] = useState(searchParams.get("branch") ?? "all");
   const currentBranch = data.branches.find((branch) => branch.id === branchId);
   const accepting = branchId === "all" ? data.branches.filter((branch) => branch.acceptingOrders).length : currentBranch?.acceptingOrders ? 1 : 0;
 
@@ -62,7 +64,7 @@ export function BusinessPortalShell({ businessId, activePage, data, children }: 
           <button className="mobile-nav-trigger" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
           <label className="business-switcher"><span>Business</span><strong>{data.business.name}</strong><ChevronDown size={15} /></label>
           <span className="topbar-divider" />
-          <label className="branch-switcher"><span>Branch</span><select value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="all">All branches</option>{data.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name} · {branch.city}</option>)}</select><ChevronDown size={15} /></label>
+          <label className="branch-switcher"><span>Branch</span><select value={branchId} onChange={(event) => { const next = event.target.value; setBranchId(next); const query = new URLSearchParams(searchParams.toString()); if (next === "all") query.delete("branch"); else query.set("branch", next); router.replace(`${pathname}${query.size ? `?${query}` : ""}`); }}><option value="all">All branches</option>{data.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name} · {branch.city}</option>)}</select><ChevronDown size={15} /></label>
           <div className="topbar-spacer" />
           <div className={`acceptance-pill ${accepting ? "accepting" : "paused"}`}><span />{branchId === "all" ? `${accepting} of ${data.branches.length} accepting` : accepting ? "Accepting orders" : "Orders paused"}</div>
           <Link className="notification-button" href={`/business/${businessId}/notifications`} aria-label="Notifications"><Bell size={19} /><span>{data.notifications.filter((item) => !item.read).length}</span></Link>

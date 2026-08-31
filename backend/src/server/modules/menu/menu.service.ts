@@ -131,7 +131,7 @@ export const menuService = {
     if (variants.length !== input.components.length)
       throw new NotFoundError("Menu component");
     if (variants.some((variant) => variant.menuItem.isCombo))
-      throw new ConflictError("Deals and combos cannot contain another deal or combo.");
+      throw new ConflictError("NESTED_COMBO_NOT_ALLOWED", "Deals and combos cannot contain another deal or combo.");
     return actorTx(actor, async (tx: any) => {
       const row = await tx.menuItem.create({
         data: {
@@ -162,13 +162,17 @@ export const menuService = {
     input: Input.UpdateItemInput,
     requestId: string,
   ) {
-    if (!(await menuRepository.item(actor.businessId, id)))
-      throw new NotFoundError("Menu item");
+    const current = await menuRepository.item(actor.businessId, id);
+    if (!current) throw new NotFoundError("Menu item");
     if (
       input.categoryId &&
       !(await menuRepository.category(actor.businessId, input.categoryId))
     )
       throw new NotFoundError("Menu category");
+    if (input.itemType === "STANDARD" && current.isCombo)
+      throw new ConflictError("COMBO_TYPE_REQUIRED", "A deal or combo cannot be converted into a standard item while it has bundle components.");
+    if ((input.itemType === "DEAL" || input.itemType === "COMBO") && !current.isCombo)
+      throw new ConflictError("STANDARD_ITEM_TYPE_REQUIRED", "Create a deal or combo with selected components instead of converting a standard item.");
     return actorTx(actor, async (tx: any) => {
       const row = await menuRepository.updateItem(tx, id, input);
       await changed(
@@ -181,6 +185,15 @@ export const menuService = {
         row,
       );
       return mapAdminMenu([{ id: "", items: [row] }])[0].items[0];
+    });
+  },
+  async deleteItem(actor: BusinessActor, id: string, requestId: string) {
+    const current = await menuRepository.item(actor.businessId, id);
+    if (!current) throw new NotFoundError("Menu item");
+    return actorTx(actor, async (tx: any) => {
+      await tx.menuItem.delete({ where: { id } });
+      await changed(tx, actor, requestId, "MenuItem", id, "menu.item.delete", null);
+      return { id, deleted: true };
     });
   },
   async createVariant(
@@ -342,6 +355,21 @@ export const menuService = {
         row,
       );
       return { ...row, priceOverride: row.priceOverride?.toString() ?? null };
+    });
+  },
+  async resetVariant(
+    actor: BusinessActor,
+    branchId: string,
+    variantId: string,
+    requestId: string,
+  ) {
+    await requireBranch(actor.businessId, branchId);
+    if (!(await menuRepository.variant(actor.businessId, variantId)))
+      throw new NotFoundError("Menu variant");
+    return actorTx(actor, async (tx: any) => {
+      await tx.branchMenuItemVariant.deleteMany({ where: { branchId, variantId } });
+      await changed(tx, actor, requestId, "BranchMenuItemVariant", `${branchId}:${variantId}`, "menu.branch-variant.reset", null);
+      return { branchId, variantId, reset: true };
     });
   },
   async configureOption(

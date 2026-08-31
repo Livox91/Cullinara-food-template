@@ -12,6 +12,7 @@ export interface MenuVariant { id: string; sku: string; name: string; price: str
 export interface MenuItem { id: string; name: string; description: string | null; imageUrl: string | null; isCombo: boolean; itemType: "STANDARD" | "DEAL" | "COMBO"; comboComponents: Array<{ variantId: string; quantity: number; itemName: string; variantName: string }>; variants: MenuVariant[]; modifierGroups: MenuModifierGroup[] }
 export interface MenuCategory { id: string; name: string; slug: string; sortOrder: number; items: MenuItem[] }
 export interface PublicMenu { branchId: string; business: { id: string; name: string; slug: string; currency: string }; categories: MenuCategory[] }
+export interface PublicReview { id: string; rating: number; comment: string; customerName: string; createdAt: string }
 export interface CartModifier { optionId: string; name: string; quantity: number }
 export interface CartItem { id: string; variantId: string; itemName: string; variantName: string; quantity: number; specialInstructions: string | null; comboComponents: Array<{ variantId: string; quantity: number; itemName: string; variantName: string }>; modifiers: CartModifier[] }
 export interface QuoteLine { cartItemId: string; variantId: string; itemName: string; variantName: string; quantity: number; unitPrice: string; modifierUnit: string; total: string; modifiers: Array<{ id: string; name: string; quantity: number; unitPriceDelta: string; total: string }> }

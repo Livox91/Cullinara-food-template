@@ -8,7 +8,8 @@ async function branchScope(actor: BusinessActor) {
     where: { id: actor.membershipId },
     include: { branchAccess: true },
   });
-  return membership?.branchAccess.map((x) => x.branchId) ?? [];
+  const ids = membership?.branchAccess.map((x) => x.branchId) ?? [];
+  return ids.length > 0 ? ids : undefined;
 }
 export const operationsService = {
   async dashboard(actor: BusinessActor) {

@@ -1,61 +1,1112 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Save, Send, SlidersHorizontal } from "lucide-react";
-import type { BusinessPageKind, BusinessPortalData } from "@/models/businessPortal";
+import type {
+  BusinessPageKind,
+  BusinessPortalData,
+} from "@/models/businessPortal";
 import { apiRequest } from "@/services/apiClient";
 import { canAccessPage } from "@/lib/businessAccess";
 import { BusinessLocationPicker } from "@/components/business/BusinessLocationPicker";
 
-interface Props { businessId: string; page: BusinessPageKind; entityId?: string; data: BusinessPortalData; onSaved: () => void }
-const value = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
-const optionalNumber = (form: FormData, key: string) => value(form, key) ? Number(value(form, key)) : null;
+interface Props {
+  businessId: string;
+  page: BusinessPageKind;
+  entityId?: string;
+  data: BusinessPortalData;
+  onSaved: () => void;
+}
+const value = (form: FormData, key: string) =>
+  String(form.get(key) ?? "").trim();
+const optionalNumber = (form: FormData, key: string) =>
+  value(form, key) ? Number(value(form, key)) : null;
 
-export function BusinessDataActions({ businessId, page, entityId, data, onSaved }: Props) {
+export function BusinessDataActions({
+  businessId,
+  page,
+  entityId,
+  data,
+  onSaved,
+}: Props) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const branchId = entityId && data.branches.some((branch) => branch.id === entityId) ? entityId : data.branches[0]?.id;
+  const branchId =
+    entityId && data.branches.some((branch) => branch.id === entityId)
+      ? entityId
+      : data.branches[0]?.id;
 
-  async function run<T>(operation: () => Promise<T>, success: string | ((result: T) => string)) {
-    setPending(true); setMessage(""); setError("");
-    try { const result = await operation(); setMessage(typeof success === "function" ? success(result) : success); onSaved(); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "The change could not be saved."); }
-    finally { setPending(false); }
+  async function run<T>(
+    operation: () => Promise<T>,
+    success: string | ((result: T) => string),
+  ) {
+    setPending(true);
+    setMessage("");
+    setError("");
+    try {
+      const result = await operation();
+      setMessage(typeof success === "function" ? success(result) : success);
+      onSaved();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The change could not be saved.",
+      );
+    } finally {
+      setPending(false);
+    }
   }
-  const submit = <T,>(operation: (form: FormData) => Promise<T>, success: string | ((result: T) => string)) => (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); const form = new FormData(event.currentTarget); void run(() => operation(form), success);
-  };
-  const status = <>{message && <div className="module-notice success">{message}</div>}{error && <div className="portal-inline-error" role="alert">{error}</div>}</>;
+  const submit =
+    <T,>(
+      operation: (form: FormData) => Promise<T>,
+      success: string | ((result: T) => string),
+    ) =>
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      void run(() => operation(form), success);
+    };
+  const status = (
+    <>
+      {message && <div className="module-notice success">{message}</div>}
+      {error && (
+        <div className="portal-inline-error" role="alert">
+          {error}
+        </div>
+      )}
+    </>
+  );
 
   if (!canAccessPage(page, data.user.capabilities)) return null;
 
-  if (page === "branches") return <Action title="Add a branch" description="Create the first location customers will order from."><form className="data-entry-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/branches`, { method: "POST", body: JSON.stringify({ name: value(f,"name"), code: value(f,"code"), phone: value(f,"phone") || null, addressLine1: value(f,"address"), city: value(f,"city"), province: value(f,"province") || null, postalCode: value(f,"postalCode") || null, latitude: Number(value(f,"latitude")), longitude: Number(value(f,"longitude")), minimumOrderAmount: Number(value(f,"minimumOrderAmount") || 0), deliveryRadiusKm: optionalNumber(f,"deliveryRadiusKm"), defaultPrepMinutes: Number(value(f,"defaultPrepMinutes") || 20) }) }), "Branch created.")}><Field name="name" label="Branch name" required/><Field name="code" label="Code" required/><Field name="address" label="Address" required wide/><Field name="city" label="City" required/><Field name="province" label="Province"/><Field name="postalCode" label="Postal code"/><Field name="phone" label="Phone"/><Field name="latitude" label="Latitude" type="number" step="any" required/><Field name="longitude" label="Longitude" type="number" step="any" required/><Field name="minimumOrderAmount" label="Minimum order" type="number" defaultValue="0"/><Field name="deliveryRadiusKm" label="Delivery radius (km)" type="number" step="0.1"/><Field name="defaultPrepMinutes" label="Prep minutes" type="number" defaultValue="20"/><Submit pending={pending} label="Create branch" />{status}</form></Action>;
+  if (page === "branches")
+    return (
+      <Action
+        title="Add a branch"
+        description="Create the first location customers will order from."
+      >
+        <form
+          className="data-entry-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest(`businesses/${businessId}/branches`, {
+                method: "POST",
+                body: JSON.stringify({
+                  name: value(f, "name"),
+                  code: value(f, "code"),
+                  phone: value(f, "phone") || null,
+                  addressLine1: value(f, "address"),
+                  city: value(f, "city"),
+                  province: value(f, "province") || null,
+                  postalCode: value(f, "postalCode") || null,
+                  latitude: Number(value(f, "latitude")),
+                  longitude: Number(value(f, "longitude")),
+                  minimumOrderAmount: Number(
+                    value(f, "minimumOrderAmount") || 0,
+                  ),
+                  deliveryRadiusKm: optionalNumber(f, "deliveryRadiusKm"),
+                  defaultPrepMinutes: Number(
+                    value(f, "defaultPrepMinutes") || 20,
+                  ),
+                }),
+              }),
+            "Branch created.",
+          )}
+        >
+          <Field name="name" label="Branch name" required />
+          <Field name="code" label="Code" required />
+          <Field name="address" label="Address" required wide />
+          <Field name="city" label="City" required />
+          <Field name="province" label="Province" />
+          <Field name="postalCode" label="Postal code" />
+          <Field name="phone" label="Phone" />
+          <Field
+            name="latitude"
+            label="Latitude"
+            type="number"
+            step="any"
+            required
+          />
+          <Field
+            name="longitude"
+            label="Longitude"
+            type="number"
+            step="any"
+            required
+          />
+          <Field
+            name="minimumOrderAmount"
+            label="Minimum order"
+            type="number"
+            defaultValue="0"
+          />
+          <Field
+            name="deliveryRadiusKm"
+            label="Delivery radius (km)"
+            type="number"
+            step="0.1"
+          />
+          <Field
+            name="defaultPrepMinutes"
+            label="Prep minutes"
+            type="number"
+            defaultValue="20"
+          />
+          <Submit pending={pending} label="Create branch" />
+          {status}
+        </form>
+      </Action>
+    );
 
-  if (page === "menu") return <div className="data-action-grid"><Action title="Add category" description="Categories organize the global menu."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/menu/categories`, { method: "POST", body: JSON.stringify({ name: value(f,"name"), slug: value(f,"slug"), sortOrder: Number(value(f,"sortOrder") || 0), isActive: true }) }), "Category created.")}><Field name="name" label="Name" required/><Field name="slug" label="Slug" required/><Field name="sortOrder" label="Sort order" type="number" defaultValue="0"/><Submit pending={pending} label="Add category" />{status}</form></Action>
-    <Action title="Add menu item" description="Create an item and its first sellable variant."><form className="data-entry-form" onSubmit={submit(async (f) => { const item = await apiRequest<{id:string}>(`businesses/${businessId}/menu/items`, { method: "POST", body: JSON.stringify({ categoryId: value(f,"categoryId"), name: value(f,"name"), description: value(f,"description") || null, imageUrl: value(f,"imageUrl") || null, isActive: true, isCombo: false, sortOrder: 0 }) }); await apiRequest(`businesses/${businessId}/menu/items/${item.id}/variants`, { method: "POST", body: JSON.stringify({ sku: value(f,"sku"), name: value(f,"variantName"), basePrice: Number(value(f,"basePrice")), isDefault: true, isActive: true }) }); }, "Menu item and variant created.")}><label>Category<select name="categoryId" required><option value="">Choose…</option>{data.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><Field name="name" label="Item name" required/><Field name="description" label="Description" wide/><Field name="imageUrl" label="Image URL" type="url" wide/><Field name="sku" label="SKU" required/><Field name="variantName" label="Variant" defaultValue="Regular" required/><Field name="basePrice" label="Base price" type="number" step="0.01" required/><Submit pending={pending} label="Create item" />{status}</form></Action>
-    <Action title="Create a deal or combo" description="Select at least two existing menu variants and sell them together for one bundle price."><form className="data-entry-form bundle-builder-form" onSubmit={submit((f) => { const components = data.menu.filter((item) => item.itemType === "STANDARD").flatMap((item) => item.variants).filter((variant) => f.get(`include-${variant.id}`)).map((variant) => ({ variantId: variant.id, quantity: Number(value(f, `quantity-${variant.id}`) || 1) })); return apiRequest(`businesses/${businessId}/menu/deals-combos`, { method: "POST", body: JSON.stringify({ categoryId: value(f,"bundleCategoryId"), kind: value(f,"bundleKind"), name: value(f,"bundleName"), description: value(f,"bundleDescription") || null, imageUrl: value(f,"bundleImageUrl") || null, sku: value(f,"bundleSku"), price: Number(value(f,"bundlePrice")), prepMinutes: optionalNumber(f,"bundlePrepMinutes"), components }) }); }, "Deal or combo created.")}><label>Type<select name="bundleKind"><option value="DEAL">Deal</option><option value="COMBO">Combo</option></select></label><label>Category<select name="bundleCategoryId" required><option value="">Choose…</option>{data.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label><Field name="bundleName" label="Name" required/><Field name="bundleSku" label="Bundle SKU" required/><Field name="bundlePrice" label="Bundle price" type="number" step="0.01" min="0" required/><Field name="bundlePrepMinutes" label="Prep minutes" type="number" min="0"/><Field name="bundleDescription" label="Description" wide/><Field name="bundleImageUrl" label="Image URL" type="url" wide/><fieldset className="bundle-component-picker"><legend>Select included items</legend>{data.menu.filter((item) => item.itemType === "STANDARD").flatMap((item) => item.variants.map((variant) => <label key={variant.id}><input type="checkbox" name={`include-${variant.id}`}/><span><strong>{item.name}</strong><small>{variant.name} · {item.category}</small></span><input aria-label={`Quantity of ${item.name}`} name={`quantity-${variant.id}`} type="number" min="1" max="99" defaultValue="1"/></label>))}</fieldset><Submit pending={pending} label="Create deal or combo" />{status}</form></Action></div>;
+  if (page === "menu")
+    return (
+      <div className="data-action-grid">
+        <Action
+          title="Add category"
+          description="Categories organize the global menu."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(`businesses/${businessId}/menu/categories`, {
+                  method: "POST",
+                  body: JSON.stringify({
+                    name: value(f, "name"),
+                    slug: value(f, "slug"),
+                    sortOrder: Number(value(f, "sortOrder") || 0),
+                    isActive: true,
+                  }),
+                }),
+              "Category created.",
+            )}
+          >
+            <Field name="name" label="Name" required />
+            <Field name="slug" label="Slug" required />
+            <Field
+              name="sortOrder"
+              label="Sort order"
+              type="number"
+              defaultValue="0"
+            />
+            <Submit pending={pending} label="Add category" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Add menu item"
+          description="Create an item and its first sellable variant."
+        >
+          <form
+            className="data-entry-form"
+            onSubmit={submit(async (f) => {
+              const item = await apiRequest<{ id: string }>(
+                `businesses/${businessId}/menu/items`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    categoryId: value(f, "categoryId"),
+                    name: value(f, "name"),
+                    description: value(f, "description") || null,
+                    imageUrl: value(f, "imageUrl") || null,
+                    isActive: true,
+                    isCombo: false,
+                    sortOrder: 0,
+                  }),
+                },
+              );
+              await apiRequest(
+                `businesses/${businessId}/menu/items/${item.id}/variants`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    sku: value(f, "sku"),
+                    name: value(f, "variantName"),
+                    basePrice: Number(value(f, "basePrice")),
+                    isDefault: true,
+                    isActive: true,
+                  }),
+                },
+              );
+            }, "Menu item and variant created.")}
+          >
+            <label>
+              Category
+              <select name="categoryId" required>
+                <option value="">Choose…</option>
+                {data.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field name="name" label="Item name" required />
+            <Field name="description" label="Description" wide />
+            <Field name="imageUrl" label="Image URL" type="url" wide />
+            <Field name="sku" label="SKU" required />
+            <Field
+              name="variantName"
+              label="Variant"
+              defaultValue="Regular"
+              required
+            />
+            <Field
+              name="basePrice"
+              label="Base price"
+              type="number"
+              step="0.01"
+              required
+            />
+            <Submit pending={pending} label="Create item" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Create a deal or combo"
+          description="Select at least two existing menu variants and sell them together for one bundle price."
+        >
+          <form
+            className="data-entry-form bundle-builder-form"
+            onSubmit={submit((f) => {
+              const components = data.menu
+                .filter((item) => item.itemType === "STANDARD")
+                .flatMap((item) => item.variants)
+                .filter((variant) => f.get(`include-${variant.id}`))
+                .map((variant) => ({
+                  variantId: variant.id,
+                  quantity: Number(value(f, `quantity-${variant.id}`) || 1),
+                }));
+              return apiRequest(`businesses/${businessId}/menu/deals-combos`, {
+                method: "POST",
+                body: JSON.stringify({
+                  categoryId: value(f, "bundleCategoryId"),
+                  kind: value(f, "bundleKind"),
+                  name: value(f, "bundleName"),
+                  description: value(f, "bundleDescription") || null,
+                  imageUrl: value(f, "bundleImageUrl") || null,
+                  sku: value(f, "bundleSku"),
+                  price: Number(value(f, "bundlePrice")),
+                  prepMinutes: optionalNumber(f, "bundlePrepMinutes"),
+                  components,
+                }),
+              });
+            }, "Deal or combo created.")}
+          >
+            <label>
+              Type
+              <select name="bundleKind">
+                <option value="DEAL">Deal</option>
+                <option value="COMBO">Combo</option>
+              </select>
+            </label>
+            <label>
+              Category
+              <select name="bundleCategoryId" required>
+                <option value="">Choose…</option>
+                {data.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field name="bundleName" label="Name" required />
+            <Field name="bundleSku" label="Bundle SKU" required />
+            <Field
+              name="bundlePrice"
+              label="Bundle price"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+            />
+            <Field
+              name="bundlePrepMinutes"
+              label="Prep minutes"
+              type="number"
+              min="0"
+            />
+            <Field name="bundleDescription" label="Description" wide />
+            <Field name="bundleImageUrl" label="Image URL" type="url" wide />
+            <fieldset className="bundle-component-picker">
+              <legend>Select included items</legend>
+              {data.menu
+                .filter((item) => item.itemType === "STANDARD")
+                .flatMap((item) =>
+                  item.variants.map((variant) => (
+                    <label key={variant.id}>
+                      <input type="checkbox" name={`include-${variant.id}`} />
+                      <span>
+                        <strong>{item.name}</strong>
+                        <small>
+                          {variant.name} · {item.category}
+                        </small>
+                      </span>
+                      <input
+                        aria-label={`Quantity of ${item.name}`}
+                        name={`quantity-${variant.id}`}
+                        type="number"
+                        min="1"
+                        max="99"
+                        defaultValue="1"
+                      />
+                    </label>
+                  )),
+                )}
+            </fieldset>
+            <Submit pending={pending} label="Create deal or combo" />
+            {status}
+          </form>
+        </Action>
+      </div>
+    );
 
-  if (page === "modifiers") return <div className="data-action-grid"><Action title="Add modifier group" description="Create a reusable group such as Choose a drink."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/modifier-groups`, { method: "POST", body: JSON.stringify({ name: value(f,"name") }) }), "Modifier group created. Attach it to an item through the API once needed.")}><Field name="name" label="Group name" required/><Submit pending={pending} label="Create group" />{status}</form></Action><Action title="Add option" description="Add a choice to an existing attached group."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/modifier-groups/${value(f,"groupId")}/options`, { method: "POST", body: JSON.stringify({ name: value(f,"name"), priceDelta: Number(value(f,"priceDelta") || 0), isActive: true, sortOrder: 0 }) }), "Modifier option created.")}><label>Group<select name="groupId" required><option value="">Choose…</option>{data.modifiers.map((g) => <option value={g.id} key={g.id}>{g.name}</option>)}</select></label><Field name="name" label="Option name" required/><Field name="priceDelta" label="Price change" type="number" step="0.01" defaultValue="0"/><Submit pending={pending} label="Add option" />{status}</form></Action></div>;
+  if (page === "modifiers")
+    return (
+      <div className="data-action-grid">
+        <Action
+          title="Add modifier group"
+          description="Create a reusable group such as Choose a drink."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(`businesses/${businessId}/modifier-groups`, {
+                  method: "POST",
+                  body: JSON.stringify({ name: value(f, "name") }),
+                }),
+              "Modifier group created. Attach it to an item through the API once needed.",
+            )}
+          >
+            <Field name="name" label="Group name" required />
+            <Submit pending={pending} label="Create group" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Add option"
+          description="Add a choice to an existing attached group."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(
+                  `businesses/${businessId}/modifier-groups/${value(f, "groupId")}/options`,
+                  {
+                    method: "POST",
+                    body: JSON.stringify({
+                      name: value(f, "name"),
+                      priceDelta: Number(value(f, "priceDelta") || 0),
+                      isActive: true,
+                      sortOrder: 0,
+                    }),
+                  },
+                ),
+              "Modifier option created.",
+            )}
+          >
+            <label>
+              Group
+              <select name="groupId" required>
+                <option value="">Choose…</option>
+                {data.modifiers.map((g) => (
+                  <option value={g.id} key={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field name="name" label="Option name" required />
+            <Field
+              name="priceDelta"
+              label="Price change"
+              type="number"
+              step="0.01"
+              defaultValue="0"
+            />
+            <Submit pending={pending} label="Add option" />
+            {status}
+          </form>
+        </Action>
+      </div>
+    );
 
-  if (page === "inventory" && branchId) return <div className="data-action-grid"><Action title="Add ingredient" description="Register a business-wide stock item."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/inventory/ingredients`, { method: "POST", body: JSON.stringify({ name: value(f,"name"), unit: value(f,"unit"), isActive: true }) }), "Ingredient created.")}><Field name="name" label="Ingredient" required/><Field name="unit" label="Unit" placeholder="kg, litres, pieces" required/><Submit pending={pending} label="Add ingredient" />{status}</form></Action><Action title="Record stock movement" description="Purchases add stock; waste removes it through the ledger."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/branches/${branchId}/inventory/${value(f,"kind")}`, { method: "POST", body: JSON.stringify({ ingredientId: value(f,"ingredientId"), quantity: Number(value(f,"quantity")), reference: value(f,"reference") || null }) }), "Inventory movement recorded.")}><label>Ingredient<select name="ingredientId" required><option value="">Choose…</option>{data.inventory.map((i) => <option value={i.ingredientId} key={i.ingredientId}>{i.name}</option>)}</select></label><label>Movement<select name="kind"><option value="purchases">Purchase</option><option value="waste">Waste</option></select></label><Field name="quantity" label="Quantity" type="number" step="0.001" required/><Field name="reference" label="Reference"/><Submit pending={pending} label="Record movement" />{status}</form></Action></div>;
+  if (page === "inventory" && branchId)
+    return (
+      <div className="data-action-grid">
+        <Action
+          title="Add ingredient"
+          description="Register a business-wide stock item."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(`businesses/${businessId}/inventory/ingredients`, {
+                  method: "POST",
+                  body: JSON.stringify({
+                    name: value(f, "name"),
+                    unit: value(f, "unit"),
+                    isActive: true,
+                  }),
+                }),
+              "Ingredient created.",
+            )}
+          >
+            <Field name="name" label="Ingredient" required />
+            <Field
+              name="unit"
+              label="Unit"
+              placeholder="kg, litres, pieces"
+              required
+            />
+            <Submit pending={pending} label="Add ingredient" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Record stock movement"
+          description="Purchases add stock; waste removes it through the ledger."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(
+                  `businesses/${businessId}/branches/${branchId}/inventory/${value(f, "kind")}`,
+                  {
+                    method: "POST",
+                    body: JSON.stringify({
+                      ingredientId: value(f, "ingredientId"),
+                      quantity: Number(value(f, "quantity")),
+                      reference: value(f, "reference") || null,
+                    }),
+                  },
+                ),
+              "Inventory movement recorded.",
+            )}
+          >
+            <label>
+              Ingredient
+              <select name="ingredientId" required>
+                <option value="">Choose…</option>
+                {data.inventory.map((i) => (
+                  <option value={i.ingredientId} key={i.ingredientId}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Movement
+              <select name="kind">
+                <option value="purchases">Purchase</option>
+                <option value="waste">Waste</option>
+              </select>
+            </label>
+            <Field
+              name="quantity"
+              label="Quantity"
+              type="number"
+              step="0.001"
+              required
+            />
+            <Field name="reference" label="Reference" />
+            <Submit pending={pending} label="Record movement" />
+            {status}
+          </form>
+        </Action>
+      </div>
+    );
 
-  if (page === "coupons") return <Action title="Create a coupon" description="The backend remains authoritative for eligibility and discount amounts."><form className="data-entry-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/coupons`, { method: "POST", body: JSON.stringify({ branchId: value(f,"branchId") || null, code: value(f,"code"), discountType: value(f,"discountType"), discountValue: Number(value(f,"discountValue")), maxDiscount: optionalNumber(f,"maxDiscount"), minOrderAmount: Number(value(f,"minOrderAmount") || 0), totalUsageLimit: optionalNumber(f,"totalUsageLimit"), perCustomerLimit: optionalNumber(f,"perCustomerLimit"), startsAt: value(f,"startsAt"), endsAt: value(f,"endsAt"), isActive: true }) }), "Coupon created.")}><Field name="code" label="Code" required/><label>Type<select name="discountType"><option value="PERCENT">Percentage</option><option value="FIXED">Fixed amount</option></select></label><Field name="discountValue" label="Discount value" type="number" step="0.01" required/><Field name="maxDiscount" label="Maximum discount" type="number" step="0.01"/><Field name="minOrderAmount" label="Minimum order" type="number" step="0.01" defaultValue="0"/><label>Branch<select name="branchId"><option value="">All branches</option>{data.branches.map((b) => <option value={b.id} key={b.id}>{b.name}</option>)}</select></label><Field name="startsAt" label="Starts" type="datetime-local" required/><Field name="endsAt" label="Ends" type="datetime-local" required/><Field name="totalUsageLimit" label="Total usage limit" type="number"/><Field name="perCustomerLimit" label="Per-customer limit" type="number"/><Submit pending={pending} label="Create coupon" />{status}</form></Action>;
+  if (page === "coupons")
+    return (
+      <Action
+        title="Create a coupon"
+        description="The backend remains authoritative for eligibility and discount amounts."
+      >
+        <form
+          className="data-entry-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest(`businesses/${businessId}/coupons`, {
+                method: "POST",
+                body: JSON.stringify({
+                  branchId: value(f, "branchId") || null,
+                  code: value(f, "code"),
+                  discountType: value(f, "discountType"),
+                  discountValue: Number(value(f, "discountValue")),
+                  maxDiscount: optionalNumber(f, "maxDiscount"),
+                  minOrderAmount: Number(value(f, "minOrderAmount") || 0),
+                  totalUsageLimit: optionalNumber(f, "totalUsageLimit"),
+                  perCustomerLimit: optionalNumber(f, "perCustomerLimit"),
+                  startsAt: value(f, "startsAt"),
+                  endsAt: value(f, "endsAt"),
+                  isActive: true,
+                }),
+              }),
+            "Coupon created.",
+          )}
+        >
+          <Field name="code" label="Code" required />
+          <label>
+            Type
+            <select name="discountType">
+              <option value="PERCENT">Percentage</option>
+              <option value="FIXED">Fixed amount</option>
+            </select>
+          </label>
+          <Field
+            name="discountValue"
+            label="Discount value"
+            type="number"
+            step="0.01"
+            required
+          />
+          <Field
+            name="maxDiscount"
+            label="Maximum discount"
+            type="number"
+            step="0.01"
+          />
+          <Field
+            name="minOrderAmount"
+            label="Minimum order"
+            type="number"
+            step="0.01"
+            defaultValue="0"
+          />
+          <label>
+            Branch
+            <select name="branchId">
+              <option value="">All branches</option>
+              {data.branches.map((b) => (
+                <option value={b.id} key={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Field
+            name="startsAt"
+            label="Starts"
+            type="datetime-local"
+            required
+          />
+          <Field name="endsAt" label="Ends" type="datetime-local" required />
+          <Field
+            name="totalUsageLimit"
+            label="Total usage limit"
+            type="number"
+          />
+          <Field
+            name="perCustomerLimit"
+            label="Per-customer limit"
+            type="number"
+          />
+          <Submit pending={pending} label="Create coupon" />
+          {status}
+        </form>
+      </Action>
+    );
 
-  if (page === "team") return <Action title="Invite an existing user" description="The person must already have an active backend account."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest<{ emailDelivery: "SENT" | "QUEUED" }>(`businesses/${businessId}/members/invitations`, { method: "POST", body: JSON.stringify({ ...(value(f,"identity").includes("@") ? { email: value(f,"identity") } : { phone: value(f,"identity") }), role: value(f,"role") }) }), (result) => result.emailDelivery === "SENT" ? "Team invitation created and email sent." : "Team invitation created. Email is queued because delivery is not configured or temporarily unavailable.")}><Field name="identity" label="Email or phone" required/><label>Role<select name="role"><option value="MANAGER">Manager</option><option value="CASHIER">Cashier</option><option value="KITCHEN">Kitchen</option><option value="SUPPORT">Support</option><option value="ADMIN">Administrator</option></select></label><Submit pending={pending} label="Invite member" icon="send" />{status}</form></Action>;
+  if (page === "team")
+    return (
+      <Action
+        title="Invite an existing user"
+        description="The person must already have an active backend account."
+      >
+        <form
+          className="data-entry-form compact-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest<{ emailDelivery: "SENT" | "QUEUED" }>(
+                `businesses/${businessId}/members/invitations`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    ...(value(f, "identity").includes("@")
+                      ? { email: value(f, "identity") }
+                      : { phone: value(f, "identity") }),
+                    role: value(f, "role"),
+                  }),
+                },
+              ),
+            (result) =>
+              result.emailDelivery === "SENT"
+                ? "Team invitation created and email sent."
+                : "Team invitation created. Email is queued because delivery is not configured or temporarily unavailable.",
+          )}
+        >
+          <Field name="identity" label="Email or phone" required />
+          <label>
+            Role
+            <select name="role">
+              <option value="MANAGER">Manager</option>
+              <option value="CASHIER">Cashier</option>
+              <option value="KITCHEN">Kitchen</option>
+              <option value="SUPPORT">Support</option>
+              <option value="ADMIN">Administrator</option>
+            </select>
+          </label>
+          <Submit pending={pending} label="Invite member" icon="send" />
+          {status}
+        </form>
+      </Action>
+    );
 
-  if (page === "settings") return <Action title="Update business profile" description="Persisted directly to the tenant record."><form className="data-entry-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}`, { method: "PATCH", body: JSON.stringify({ legalName: value(f,"legalName"), displayName: value(f,"displayName"), slug: value(f,"slug"), defaultCurrency: value(f,"currency"), timezone: value(f,"timezone"), taxRegistrationNo: value(f,"taxRegistrationNo") || null }) }), "Business settings saved.")}><Field name="legalName" label="Legal name" defaultValue={data.business.legalName} required/><Field name="displayName" label="Display name" defaultValue={data.business.name} required/><Field name="slug" label="Slug" defaultValue={data.business.slug} required/><Field name="currency" label="Currency" defaultValue={data.business.currency} required/><Field name="timezone" label="Timezone" defaultValue={data.business.timezone} required/><Field name="taxRegistrationNo" label="Tax registration" defaultValue={data.business.taxRegistrationNo}/><Submit pending={pending} label="Save profile" />{status}</form></Action>;
+  if (page === "settings")
+    return (
+      <Action
+        title="Update business profile"
+        description="Persisted directly to the tenant record."
+      >
+        <form
+          className="data-entry-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest(`businesses/${businessId}`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                  legalName: value(f, "legalName"),
+                  displayName: value(f, "displayName"),
+                  slug: value(f, "slug"),
+                  defaultCurrency: value(f, "currency"),
+                  timezone: value(f, "timezone"),
+                  taxRegistrationNo: value(f, "taxRegistrationNo") || null,
+                }),
+              }),
+            "Business settings saved.",
+          )}
+        >
+          <Field
+            name="legalName"
+            label="Legal name"
+            defaultValue={data.business.legalName}
+            required
+          />
+          <Field
+            name="displayName"
+            label="Display name"
+            defaultValue={data.business.name}
+            required
+          />
+          <Field
+            name="slug"
+            label="Slug"
+            defaultValue={data.business.slug}
+            required
+          />
+          <Field
+            name="currency"
+            label="Currency"
+            defaultValue={data.business.currency}
+            required
+          />
+          <Field
+            name="timezone"
+            label="Timezone"
+            defaultValue={data.business.timezone}
+            required
+          />
+          <Field
+            name="taxRegistrationNo"
+            label="Tax registration"
+            defaultValue={data.business.taxRegistrationNo}
+          />
+          <Submit pending={pending} label="Save profile" />
+          {status}
+        </form>
+      </Action>
+    );
 
-  if (page === "branch-detail" && branchId) { const branch = data.branches.find((b) => b.id === branchId)!; return <Action title="Order acceptance" description="Pause or resume new customer orders for this branch."><button className={`module-button ${branch.acceptingOrders ? "danger" : "primary"}`} disabled={pending} onClick={() => void run(() => apiRequest(`businesses/${businessId}/branches/${branchId}/order-acceptance`, { method: "PATCH", body: JSON.stringify({ isAcceptingOrders: !branch.acceptingOrders }) }), branch.acceptingOrders ? "Orders paused." : "Orders resumed.")}>{branch.acceptingOrders ? "Pause new orders" : "Resume new orders"}</button>{status}</Action>; }
+  if (page === "branch-detail" && branchId) {
+    const branch = data.branches.find((b) => b.id === branchId)!;
+    return (
+      <Action
+        title="Order acceptance"
+        description="Pause or resume new customer orders for this branch."
+      >
+        <button
+          className={`module-button ${branch.acceptingOrders ? "danger" : "primary"}`}
+          disabled={pending}
+          onClick={() =>
+            void run(
+              () =>
+                apiRequest(
+                  `businesses/${businessId}/branches/${branchId}/order-acceptance`,
+                  {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                      isAcceptingOrders: !branch.acceptingOrders,
+                    }),
+                  },
+                ),
+              branch.acceptingOrders ? "Orders paused." : "Orders resumed.",
+            )
+          }
+        >
+          {branch.acceptingOrders ? "Pause new orders" : "Resume new orders"}
+        </button>
+        {status}
+      </Action>
+    );
+  }
 
-  if (page === "hours" && branchId) return <Action title="Save weekly hours" description="This replaces all seven regular schedules with one interval per open day."><form className="hours-editor-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/branches/${branchId}/hours`, { method: "PUT", body: JSON.stringify({ days: data.weeklyHours.map((row, index) => ({ dayOfWeek: index, isClosed: !f.get(`enabled-${index}`), intervals: f.get(`enabled-${index}`) ? [{ opensAt: value(f,`opens-${index}`), closesAt: value(f,`closes-${index}`) }] : [] })) }) }), "Operating hours saved.")}>{data.weeklyHours.map((row, index) => <div key={row.day}><label><input name={`enabled-${index}`} type="checkbox" defaultChecked={row.enabled}/>{row.day}</label><input name={`opens-${index}`} type="time" defaultValue={row.opens}/><span>to</span><input name={`closes-${index}`} type="time" defaultValue={row.closes}/></div>)}<Submit pending={pending} label="Save weekly hours" />{status}</form></Action>;
+  if (page === "hours" && branchId)
+    return (
+      <div className="data-action-grid"><Action
+        title="Save weekly hours"
+        description="This replaces all seven regular schedules with one interval per open day."
+      >
+        <form
+          className="hours-editor-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest(
+                `businesses/${businessId}/branches/${branchId}/hours`,
+                {
+                  method: "PUT",
+                  body: JSON.stringify({
+                    days: data.weeklyHours.map((row, index) => ({
+                      dayOfWeek: index,
+                      isClosed: !f.get(`enabled-${index}`),
+                      intervals: f.get(`enabled-${index}`)
+                        ? [
+                            {
+                              opensAt: value(f, `opens-${index}`),
+                              closesAt: value(f, `closes-${index}`),
+                            },
+                          ]
+                        : [],
+                    })),
+                  }),
+                },
+              ),
+            "Operating hours saved.",
+          )}
+        >
+          {data.weeklyHours.map((row, index) => (
+            <div key={row.day}>
+              <label>
+                <input
+                  name={`enabled-${index}`}
+                  type="checkbox"
+                  defaultChecked={row.enabled}
+                />
+                {row.day}
+              </label>
+              <input
+                name={`opens-${index}`}
+                type="time"
+                defaultValue={row.opens}
+              />
+              <span>to</span>
+              <input
+                name={`closes-${index}`}
+                type="time"
+                defaultValue={row.closes}
+              />
+            </div>
+          ))}
+          <Submit pending={pending} label="Save weekly hours" />
+          {status}
+        </form>
+      </Action>
+      <Action title="Add special-hours exception" description="Override the weekly schedule for one date.">
+        <form className="data-entry-form compact-form" onSubmit={submit(
+          (f) => {
+            const closed = value(f, "isClosed") === "true";
+            return apiRequest(`businesses/${businessId}/branches/${branchId}/special-hours`, {
+              method: "PUT",
+              body: JSON.stringify({ date: value(f, "date"), isClosed: closed, intervals: closed ? [] : [{ opensAt: value(f, "opensAt"), closesAt: value(f, "closesAt") }], note: value(f, "note") || null }),
+            });
+          },
+          "Special-hours exception saved.",
+        )}>
+          <Field name="date" label="Date" type="date" required />
+          <label>Schedule<select name="isClosed"><option value="false">Custom hours</option><option value="true">Closed all day</option></select></label>
+          <Field name="opensAt" label="Opens" type="time" defaultValue="09:00" />
+          <Field name="closesAt" label="Closes" type="time" defaultValue="22:00" />
+          <Field name="note" label="Note" />
+          <Submit pending={pending} label="Save exception" />
+          {status}
+        </form>
+      </Action></div>
+    );
 
-  if (page === "menu-item" && entityId) { const item = data.menu.find((row) => row.id === entityId); if (!item) return null; return <div className="data-action-grid"><Action title="Update item" description="Edit global catalog identity."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/menu/items/${entityId}`, { method: "PATCH", body: JSON.stringify({ categoryId: value(f,"categoryId"), name: value(f,"name"), description: value(f,"description") || null, isActive: value(f,"isActive") === "true" }) }), "Menu item saved.")}><label>Category<select name="categoryId" defaultValue={item.categoryId}>{data.categories.map((c) => <option value={c.id} key={c.id}>{c.name}</option>)}</select></label><Field name="name" label="Name" defaultValue={item.name} required/><Field name="description" label="Description" defaultValue={item.description}/><label>Status<select name="isActive" defaultValue={String(item.active)}><option value="true">Active</option><option value="false">Inactive</option></select></label><Submit pending={pending} label="Save item" />{status}</form></Action><Action title="Add variant" description="Create another size or sellable SKU."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/menu/items/${entityId}/variants`, { method: "POST", body: JSON.stringify({ sku: value(f,"sku"), name: value(f,"name"), basePrice: Number(value(f,"basePrice")), isDefault: false, isActive: true }) }), "Variant added.")}><Field name="sku" label="SKU" required/><Field name="name" label="Variant name" required/><Field name="basePrice" label="Base price" type="number" step="0.01" required/><Submit pending={pending} label="Add variant" />{status}</form></Action></div>; }
+  if (page === "menu-item" && entityId) {
+    const item = data.menu.find((row) => row.id === entityId);
+    if (!item) return null;
+    return (
+      <div className="data-action-grid">
+        <Action title="Update item" description="Edit global catalog identity.">
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(`businesses/${businessId}/menu/items/${entityId}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({
+                    categoryId: value(f, "categoryId"),
+                    name: value(f, "name"),
+                    description: value(f, "description") || null,
+                    imageUrl: value(f, "imageUrl") || null,
+                    sortOrder: Number(value(f, "sortOrder") || 0),
+                    itemType: value(f, "itemType"),
+                    isActive: value(f, "isActive") === "true",
+                  }),
+                }),
+              "Menu item saved.",
+            )}
+          >
+            <label>
+              Category
+              <select name="categoryId" defaultValue={item.categoryId}>
+                {data.categories.map((c) => (
+                  <option value={c.id} key={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field name="name" label="Name" defaultValue={item.name} required />
+            <Field
+              name="description"
+              label="Description"
+              defaultValue={item.description}
+              wide
+            />
+            <Field
+              name="imageUrl"
+              label="Image URL"
+              type="url"
+              defaultValue={item.imageUrl}
+              wide
+            />
+            <Field
+              name="sortOrder"
+              label="Sort priority"
+              type="number"
+              min="0"
+              defaultValue={item.sortOrder}
+            />
+            <label>
+              Item type
+              <select name="itemType" defaultValue={item.itemType}>
+                {item.itemType === "STANDARD" ? (
+                  <option value="STANDARD">Standard item</option>
+                ) : (
+                  <>
+                    <option value="DEAL">Deal</option>
+                    <option value="COMBO">Combo</option>
+                  </>
+                )}
+              </select>
+            </label>
+            <label>
+              Status
+              <select name="isActive" defaultValue={String(item.active)}>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </label>
+            <Submit pending={pending} label="Save all changes" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Add variant"
+          description="Create another size or sellable SKU."
+        >
+          <form
+            className="data-entry-form compact-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(
+                  `businesses/${businessId}/menu/items/${entityId}/variants`,
+                  {
+                    method: "POST",
+                    body: JSON.stringify({
+                      sku: value(f, "sku"),
+                      name: value(f, "name"),
+                      basePrice: Number(value(f, "basePrice")),
+                      isDefault: false,
+                      isActive: true,
+                    }),
+                  },
+                ),
+              "Variant added.",
+            )}
+          >
+            <Field name="sku" label="SKU" required />
+            <Field name="name" label="Variant name" required />
+            <Field
+              name="basePrice"
+              label="Base price"
+              type="number"
+              step="0.01"
+              required
+            />
+            <Submit pending={pending} label="Add variant" />
+            {status}
+          </form>
+        </Action>
+        <Action title="Delete item" description="Permanently remove this item and its variants from the catalog.">
+          <button
+            className="module-button danger"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm(`Delete ${item.name}? This cannot be undone.`)) return;
+              void run(async () => {
+                await apiRequest(`businesses/${businessId}/menu/items/${entityId}`, { method: "DELETE" });
+                router.push(`/business/${businessId}/menu`);
+              }, "Menu item deleted.");
+            }}
+          >
+            Delete menu item
+          </button>
+          {status}
+        </Action>
+      </div>
+    );
+  }
 
-  if (page === "branch-menu" && branchId) return <Action title="Set branch price and availability" description="Override a global variant only for this branch."><form className="data-entry-form compact-form" onSubmit={submit((f) => apiRequest(`businesses/${businessId}/branches/${branchId}/menu/variants/${value(f,"variantId")}`, { method: "PUT", body: JSON.stringify({ priceOverride: optionalNumber(f,"priceOverride"), isAvailable: value(f,"isAvailable") === "true", soldOutUntil: value(f,"soldOutUntil") || null }) }), "Branch menu override saved.")}><label>Variant<select name="variantId" required><option value="">Choose…</option>{data.menu.flatMap((item) => item.variants.map((variant) => <option value={variant.id} key={variant.id}>{item.name} — {variant.name}</option>))}</select></label><Field name="priceOverride" label="Price override" type="number" step="0.01"/><label>Available<select name="isAvailable"><option value="true">Available</option><option value="false">Unavailable</option></select></label><Field name="soldOutUntil" label="Sold out until" type="datetime-local"/><Submit pending={pending} label="Save override" />{status}</form></Action>;
+  if (page === "branch-menu" && branchId)
+    return (
+      <div className="data-action-grid"><Action
+        title="Set branch price and availability"
+        description="Override a global variant only for this branch."
+      >
+        <form
+          className="data-entry-form compact-form"
+          onSubmit={submit(
+            (f) =>
+              apiRequest(
+                `businesses/${businessId}/branches/${branchId}/menu/variants/${value(f, "variantId")}`,
+                {
+                  method: "PUT",
+                  body: JSON.stringify({
+                    priceOverride: optionalNumber(f, "priceOverride"),
+                    isAvailable: value(f, "isAvailable") === "true",
+                    soldOutUntil: value(f, "soldOutUntil") || null,
+                  }),
+                },
+              ),
+            "Branch menu override saved.",
+          )}
+        >
+          <label>
+            Variant
+            <select name="variantId" required>
+              <option value="">Choose…</option>
+              {data.menu.flatMap((item) =>
+                item.variants.map((variant) => (
+                  <option value={variant.id} key={variant.id}>
+                    {item.name} — {variant.name}
+                  </option>
+                )),
+              )}
+            </select>
+          </label>
+          <Field
+            name="priceOverride"
+            label="Price override"
+            type="number"
+            step="0.01"
+          />
+          <label>
+            Available
+            <select name="isAvailable">
+              <option value="true">Available</option>
+              <option value="false">Unavailable</option>
+            </select>
+          </label>
+          <Field
+            name="soldOutUntil"
+            label="Sold out until"
+            type="datetime-local"
+          />
+          <Submit pending={pending} label="Save override" />
+          {status}
+        </form>
+      </Action>
+      <Action title="Reset to global" description="Remove a branch override so the selected variant inherits global price and availability.">
+        <form className="data-entry-form compact-form" onSubmit={submit(
+          (f) => apiRequest(`businesses/${businessId}/branches/${branchId}/menu/variants/${value(f, "variantId")}`, { method: "DELETE" }),
+          "Override reset to global.",
+        )}>
+          <label>Variant<select name="variantId" required><option value="">Choose…</option>{data.menu.flatMap((item) => item.variants.map((variant) => <option value={variant.id} key={variant.id}>{item.name} — {variant.name}</option>))}</select></label>
+          <Submit pending={pending} label="Reset to global" />
+          {status}
+        </form>
+      </Action></div>
+    );
   return null;
 }
 
-function Action({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <details className="module-panel data-action" open><summary><span><SlidersHorizontal size={16}/><strong>{title}</strong><small>{description}</small></span><Plus size={16}/></summary><div>{title === "Add a branch" && <BusinessLocationPicker/>}{children}</div></details>; }
-function Field({ label, wide, ...props }: { label: string; wide?: boolean } & React.InputHTMLAttributes<HTMLInputElement>) { return <label className={wide ? "wide" : ""}>{label}<input {...props}/></label>; }
-function Submit({ pending, label, icon }: { pending: boolean; label: string; icon?: "send" }) { const Icon = icon === "send" ? Send : Save; return <button className="module-button primary form-submit" disabled={pending}><Icon size={14}/>{pending ? "Saving…" : label}</button>; }
+function Action({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="module-panel data-action" open>
+      <summary>
+        <span>
+          <SlidersHorizontal size={16} />
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+        <Plus size={16} />
+      </summary>
+      <div>
+        {title === "Add a branch" && <BusinessLocationPicker />}
+        {children}
+      </div>
+    </details>
+  );
+}
+function Field({
+  label,
+  wide,
+  ...props
+}: {
+  label: string;
+  wide?: boolean;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <label className={wide ? "wide" : ""}>
+      {label}
+      <input {...props} />
+    </label>
+  );
+}
+function Submit({
+  pending,
+  label,
+  icon,
+}: {
+  pending: boolean;
+  label: string;
+  icon?: "send";
+}) {
+  const Icon = icon === "send" ? Send : Save;
+  return (
+    <button className="module-button primary form-submit" disabled={pending}>
+      <Icon size={14} />
+      {pending ? "Saving…" : label}
+    </button>
+  );
+}

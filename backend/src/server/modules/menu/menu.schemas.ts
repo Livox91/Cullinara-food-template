@@ -25,7 +25,9 @@ export const CreateItemSchema = z.object({
   isCombo: z.boolean().default(false),
   sortOrder: z.number().int().min(0).default(0),
 });
-export const UpdateItemSchema = CreateItemSchema.partial().refine(
+export const UpdateItemSchema = CreateItemSchema.extend({
+  itemType: z.enum(["STANDARD", "DEAL", "COMBO"]).optional(),
+}).partial().refine(
   (v) => Object.keys(v).length > 0,
 );
 export const CreateDealComboSchema = z.object({

@@ -2,7 +2,7 @@ import "server-only";
 import type { BusinessActor } from "@/server/auth/authorization";
 import { getPrisma } from "@/server/db/prisma";
 import { withTransaction } from "@/server/db/transaction";
-import { NotFoundError } from "@/server/http/errors";
+import { ConflictError, NotFoundError } from "@/server/http/errors";
 import { auditRepository } from "@/server/modules/audit/audit.repository";
 import type { z } from "zod";
 import type {
@@ -138,6 +138,66 @@ export const inventoryService = {
       })
     ).map(inventoryDto);
   },
+  async listMovements(a: BusinessActor, branchId: string) {
+    await branch(a.businessId, branchId);
+    const prisma = getPrisma();
+    const [movements, balances] = await Promise.all([
+      prisma.inventoryMovement.findMany({
+        where: { branchId },
+        include: { ingredient: { select: { name: true, unit: true } } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 200,
+      }),
+      prisma.branchInventory.findMany({ where: { branchId } }),
+    ]);
+    const audits = movements.length
+      ? await prisma.auditLog.findMany({
+          where: {
+            businessId: a.businessId,
+            entityType: "InventoryMovement",
+            entityId: { in: movements.map((movement) => movement.id) },
+          },
+          include: { actor: { select: { email: true, phone: true } } },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+    const auditByMovement = new Map(
+      audits.map((audit) => [audit.entityId, audit]),
+    );
+    const runningBalances = new Map(
+      balances.map((balance) => [
+        balance.ingredientId,
+        balance.quantityOnHand,
+      ]),
+    );
+
+    return movements.map((movement) => {
+      const result = runningBalances.get(movement.ingredientId);
+      if (result)
+        runningBalances.set(
+          movement.ingredientId,
+          result.minus(movement.deltaOnHand),
+        );
+      const audit = auditByMovement.get(movement.id);
+      return {
+        id: movement.id,
+        createdAt: movement.createdAt,
+        ingredientId: movement.ingredientId,
+        ingredientName: movement.ingredient.name,
+        unit: movement.ingredient.unit,
+        reason: movement.reason,
+        deltaOnHand: movement.deltaOnHand.toString(),
+        deltaReserved: movement.deltaReserved.toString(),
+        reference: movement.reference,
+        actor:
+          audit?.actor?.email ??
+          audit?.actor?.phone ??
+          audit?.actorType ??
+          "SYSTEM",
+        quantityOnHandAfter: result?.toString() ?? null,
+      };
+    });
+  },
   async movement(
     a: BusinessActor,
     branchId: string,
@@ -148,31 +208,75 @@ export const inventoryService = {
     await branch(a.businessId, branchId);
     await ingredient(a.businessId, x.ingredientId);
     const delta = reason === "PURCHASE" ? x.quantity : -x.quantity;
-    const row = await withTransaction(
-      { actorType: "BUSINESS", userId: a.userId },
-      async (tx) => {
-        const m = await tx.inventoryMovement.create({
-          data: {
-            branchId,
-            ingredientId: x.ingredientId,
-            reason,
-            deltaOnHand: delta,
-            reference: x.reference,
-          },
-        });
-        await auditRepository.write(tx, {
-          businessId: a.businessId,
-          actorUserId: a.userId,
-          actorType: "BUSINESS",
-          action: `inventory.${reason.toLowerCase()}`,
-          entityType: "InventoryMovement",
-          entityId: m.id,
-          after: { ...x, reason },
-          requestId,
-        });
-        return m;
-      },
-    );
+    let row;
+    try {
+      row = await withTransaction(
+        { actorType: "BUSINESS", userId: a.userId },
+        async (tx) => {
+          if (reason === "WASTE") {
+            const balance = await tx.branchInventory.findUnique({
+              where: {
+                branchId_ingredientId: {
+                  branchId,
+                  ingredientId: x.ingredientId,
+                },
+              },
+            });
+            const available = balance
+              ? balance.quantityOnHand.minus(balance.quantityReserved)
+              : null;
+
+            if (!available || available.lessThan(x.quantity)) {
+              throw new ConflictError(
+                "INSUFFICIENT_INVENTORY",
+                "Waste quantity cannot exceed the available inventory.",
+                {
+                  requested: x.quantity.toString(),
+                  available: available?.toString() ?? "0",
+                },
+              );
+            }
+          }
+
+          const m = await tx.inventoryMovement.create({
+            data: {
+              branchId,
+              ingredientId: x.ingredientId,
+              reason,
+              deltaOnHand: delta,
+              reference: x.reference,
+            },
+          });
+          await auditRepository.write(tx, {
+            businessId: a.businessId,
+            actorUserId: a.userId,
+            actorType: "BUSINESS",
+            action: `inventory.${reason.toLowerCase()}`,
+            entityType: "InventoryMovement",
+            entityId: m.id,
+            after: { ...x, reason },
+            requestId,
+          });
+          return m;
+        },
+      );
+    } catch (error) {
+      // The database trigger remains authoritative if another movement changes
+      // the balance between the availability check and this insert.
+      if (
+        reason === "WASTE" &&
+        error instanceof Error &&
+        error.message.includes(
+          "Inventory movement would create invalid/negative stock",
+        )
+      ) {
+        throw new ConflictError(
+          "INSUFFICIENT_INVENTORY",
+          "Waste quantity cannot exceed the available inventory.",
+        );
+      }
+      throw error;
+    }
     return {
       ...row,
       deltaOnHand: row.deltaOnHand.toString(),

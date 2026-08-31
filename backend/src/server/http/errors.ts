@@ -94,7 +94,15 @@ export function toHttpError(error: unknown, requestId: string): Response {
   }
 
   console.error(
-    JSON.stringify({ level: "error", requestId, code: "INTERNAL_ERROR" }),
+    JSON.stringify({
+      level: "error",
+      requestId,
+      code: "INTERNAL_ERROR",
+      error:
+        error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : String(error),
+    }),
   );
   return jsonError(
     500,

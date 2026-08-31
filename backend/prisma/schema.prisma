@@ -152,23 +152,23 @@ enum VerificationChannel {
 }
 
 model User {
-  id             String        @id @default(uuid()) @db.Uuid
-  email          String?       @unique
-  phone          String?       @unique
-  passwordHash   String?
-  status         AccountStatus @default(ACTIVE)
+  id              String        @id @default(uuid()) @db.Uuid
+  email           String?       @unique
+  phone           String?       @unique
+  passwordHash    String?
+  status          AccountStatus @default(ACTIVE)
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now()) @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
 
-  customerProfile     CustomerProfile?
-  riderProfile        RiderProfile?
-  memberships         BusinessMembership[]
-  addresses           CustomerAddress[]
-  auditLogs           AuditLog[]             @relation("AuditActor")
-  idempotencyKeys     IdempotencyKey[]
-  authSessions        AuthSession[]
+  customerProfile        CustomerProfile?
+  riderProfile           RiderProfile?
+  memberships            BusinessMembership[]
+  addresses              CustomerAddress[]
+  auditLogs              AuditLog[]                      @relation("AuditActor")
+  idempotencyKeys        IdempotencyKey[]
+  authSessions           AuthSession[]
   verificationChallenges IdentityVerificationChallenge[]
 
   @@index([status])
@@ -215,7 +215,7 @@ model CustomerProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   carts             Cart[]
   orders            Order[]
   couponRedemptions CouponRedemption[]
@@ -235,7 +235,7 @@ model RiderProfile {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @default(now()) @updatedAt
 
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments RiderAssignment[]
   locations   RiderLocationPing[]
   reviews     OrderReview[]
@@ -266,13 +266,13 @@ model Business {
 }
 
 model BusinessMembership {
-  id        String           @id @default(uuid()) @db.Uuid
-  businessId String          @db.Uuid
-  userId    String           @db.Uuid
-  role      MembershipRole
-  status    MembershipStatus @default(ACTIVE)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @default(now()) @updatedAt
+  id         String           @id @default(uuid()) @db.Uuid
+  businessId String           @db.Uuid
+  userId     String           @db.Uuid
+  role       MembershipRole
+  status     MembershipStatus @default(ACTIVE)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @default(now()) @updatedAt
 
   business     Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -294,27 +294,27 @@ model StaffBranchAccess {
 }
 
 model Branch {
-  id                  String   @id @default(uuid()) @db.Uuid
-  businessId          String   @db.Uuid
-  code                String
-  name                String
-  phone               String?
-  addressLine1        String
-  addressLine2        String?
-  city                String
-  province            String?
-  postalCode          String?
-  latitude            Decimal  @db.Decimal(9, 6)
-  longitude           Decimal  @db.Decimal(9, 6)
-  isActive            Boolean  @default(true)
-  isAcceptingOrders   Boolean  @default(true)
-  minimumOrderAmount  Decimal  @default(0) @db.Decimal(12, 2)
-  deliveryRadiusKm    Decimal? @db.Decimal(6, 2)
-  defaultPrepMinutes  Int      @default(20)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @default(now()) @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  businessId         String   @db.Uuid
+  code               String
+  name               String
+  phone              String?
+  addressLine1       String
+  addressLine2       String?
+  city               String
+  province           String?
+  postalCode         String?
+  latitude           Decimal  @db.Decimal(9, 6)
+  longitude          Decimal  @db.Decimal(9, 6)
+  isActive           Boolean  @default(true)
+  isAcceptingOrders  Boolean  @default(true)
+  minimumOrderAmount Decimal  @default(0) @db.Decimal(12, 2)
+  deliveryRadiusKm   Decimal? @db.Decimal(6, 2)
+  defaultPrepMinutes Int      @default(20)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
 
-  business              Business                 @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  business              Business                @relation(fields: [businessId], references: [id], onDelete: Restrict)
   staffAccess           StaffBranchAccess[]
   hours                 BranchHour[]
   specialHours          BranchSpecialHour[]
@@ -369,7 +369,7 @@ model MenuCategory {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   items    MenuItem[]
 
   @@unique([businessId, slug])
@@ -377,24 +377,24 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id          String   @id @default(uuid()) @db.Uuid
-  businessId  String   @db.Uuid
-  categoryId  String   @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  businessId  String       @db.Uuid
+  categoryId  String       @db.Uuid
   name        String
   description String?
   imageUrl    String?
-  isActive    Boolean  @default(true)
-  isCombo     Boolean  @default(false)
+  isActive    Boolean      @default(true)
+  isCombo     Boolean      @default(false)
   itemType    MenuItemType @default(STANDARD)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
 
-  business       Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  category       MenuCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  variants       MenuItemVariant[]
-  modifierGroups MenuItemModifierGroup[]
-  comboComponents ComboComponent[] @relation("ComboParent")
+  business        Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category        MenuCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variants        MenuItemVariant[]
+  modifierGroups  MenuItemModifierGroup[]
+  comboComponents ComboComponent[]        @relation("ComboParent")
 
   @@index([businessId, categoryId, isActive, sortOrder])
 }
@@ -411,12 +411,12 @@ model MenuItemVariant {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
-  menuItem       MenuItem                @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  branchVariants BranchMenuItemVariant[]
-  recipe         RecipeComponent[]
-  cartItems      CartItem[]
-  orderItems     OrderItem[]
-  includedInCombos ComboComponent[] @relation("ComboComponentVariant")
+  menuItem         MenuItem                @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  branchVariants   BranchMenuItemVariant[]
+  recipe           RecipeComponent[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  includedInCombos ComboComponent[]        @relation("ComboComponentVariant")
 
   @@index([menuItemId, isActive])
 }
@@ -449,8 +449,8 @@ model ModifierGroup {
 }
 
 model MenuItemModifierGroup {
-  menuItemId      String @db.Uuid
-  modifierGroupId String @db.Uuid
+  menuItemId      String  @db.Uuid
+  modifierGroupId String  @db.Uuid
   isRequired      Boolean @default(false)
   minSelections   Int     @default(0)
   maxSelections   Int     @default(1)
@@ -463,14 +463,14 @@ model MenuItemModifierGroup {
 }
 
 model ModifierOption {
-  id             String   @id @default(uuid()) @db.Uuid
-  modifierGroupId String  @db.Uuid
-  name           String
-  priceDelta     Decimal  @default(0) @db.Decimal(12, 2)
-  isActive       Boolean  @default(true)
-  sortOrder      Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now()) @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  modifierGroupId String   @db.Uuid
+  name            String
+  priceDelta      Decimal  @default(0) @db.Decimal(12, 2)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   modifierGroup  ModifierGroup          @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
   branchOptions  BranchModifierOption[]
@@ -481,12 +481,12 @@ model ModifierOption {
 }
 
 model BranchMenuItemVariant {
-  branchId      String   @db.Uuid
-  variantId     String   @db.Uuid
-  priceOverride Decimal? @db.Decimal(12, 2)
-  isAvailable   Boolean  @default(true)
+  branchId      String    @db.Uuid
+  variantId     String    @db.Uuid
+  priceOverride Decimal?  @db.Decimal(12, 2)
+  isAvailable   Boolean   @default(true)
   soldOutUntil  DateTime?
-  updatedAt     DateTime @default(now()) @updatedAt
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   branch  Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
   variant MenuItemVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
@@ -510,22 +510,22 @@ model BranchModifierOption {
 }
 
 model CustomerAddress {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  label        String?
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  label         String?
   recipientName String
-  phone        String
-  addressLine1 String
-  addressLine2 String?
-  city         String
-  province     String?
-  postalCode   String?
-  latitude     Decimal  @db.Decimal(9, 6)
-  longitude    Decimal  @db.Decimal(9, 6)
-  deliveryNote String?
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  phone         String
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  province      String?
+  postalCode    String?
+  latitude      Decimal  @db.Decimal(9, 6)
+  longitude     Decimal  @db.Decimal(9, 6)
+  deliveryNote  String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   carts Cart[]
@@ -544,8 +544,8 @@ model Cart {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @default(now()) @updatedAt
 
-  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  branch   Branch          @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer CustomerProfile  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  branch   Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
   address  CustomerAddress? @relation(fields: [addressId], references: [id], onDelete: SetNull)
   items    CartItem[]
   order    Order?
@@ -560,21 +560,20 @@ model CartItem {
   variantId           String   @db.Uuid
   quantity            Int
   specialInstructions String?
-  componentSnapshot   Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @default(now()) @updatedAt
 
-  cart      Cart                 @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  variant   MenuItemVariant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  cart      Cart               @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant   MenuItemVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
   modifiers CartItemModifier[]
 
   @@index([cartId])
 }
 
 model CartItemModifier {
-  cartItemId String  @db.Uuid
-  optionId   String  @db.Uuid
-  quantity   Int     @default(1)
+  cartItemId String @db.Uuid
+  optionId   String @db.Uuid
+  quantity   Int    @default(1)
 
   cartItem CartItem       @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
   option   ModifierOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
@@ -620,9 +619,9 @@ model Order {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @default(now()) @updatedAt
 
-  branch             Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  customer           CustomerProfile?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  cart               Cart?                  @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  branch             Branch               @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer           CustomerProfile?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cart               Cart?                @relation(fields: [cartId], references: [id], onDelete: SetNull)
   items              OrderItem[]
   adjustments        OrderAdjustment[]
   statusHistory      OrderStatusHistory[]
@@ -653,6 +652,7 @@ model OrderItem {
   taxAmount           Decimal  @default(0) @db.Decimal(12, 2)
   totalAmount         Decimal  @db.Decimal(12, 2)
   specialInstructions String?
+  componentSnapshot   Json?
   createdAt           DateTime @default(now())
 
   order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -696,15 +696,15 @@ model OrderAdjustment {
 }
 
 model OrderStatusHistory {
-  id          String      @id @default(uuid()) @db.Uuid
-  orderId     String      @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  orderId     String       @db.Uuid
   fromStatus  OrderStatus?
   toStatus    OrderStatus
-  actorType   ActorType   @default(SYSTEM)
-  actorUserId String?     @db.Uuid
+  actorType   ActorType    @default(SYSTEM)
+  actorUserId String?      @db.Uuid
   note        String?
   metadata    Json?
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime     @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -771,7 +771,7 @@ model OrderDelivery {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @default(now()) @updatedAt
 
-  order       Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order       Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   assignments RiderAssignment[]
   locations   RiderLocationPing[]
 
@@ -779,21 +779,21 @@ model OrderDelivery {
 }
 
 model RiderAssignment {
-  id         String                @id @default(uuid()) @db.Uuid
-  deliveryId String                @db.Uuid
-  riderId    String                @db.Uuid
-  status     RiderAssignmentStatus @default(OFFERED)
-  offeredAt  DateTime              @default(now())
-  acceptedAt DateTime?
-  pickedUpAt DateTime?
+  id          String                @id @default(uuid()) @db.Uuid
+  deliveryId  String                @db.Uuid
+  riderId     String                @db.Uuid
+  status      RiderAssignmentStatus @default(OFFERED)
+  offeredAt   DateTime              @default(now())
+  acceptedAt  DateTime?
+  pickedUpAt  DateTime?
   completedAt DateTime?
-  expiresAt  DateTime?
+  expiresAt   DateTime?
   cancelledAt DateTime?
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @default(now()) @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @default(now()) @updatedAt
 
-  delivery OrderDelivery           @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
-  rider    RiderProfile            @relation(fields: [riderId], references: [id], onDelete: Restrict)
+  delivery OrderDelivery            @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  rider    RiderProfile             @relation(fields: [riderId], references: [id], onDelete: Restrict)
   history  RiderAssignmentHistory[]
 
   @@index([deliveryId, status])
@@ -801,14 +801,14 @@ model RiderAssignment {
 }
 
 model RiderAssignmentHistory {
-  id           String                @id @default(uuid()) @db.Uuid
-  assignmentId String                @db.Uuid
+  id           String                 @id @default(uuid()) @db.Uuid
+  assignmentId String                 @db.Uuid
   fromStatus   RiderAssignmentStatus?
   toStatus     RiderAssignmentStatus
-  actorType    ActorType             @default(SYSTEM)
-  actorUserId  String?               @db.Uuid
+  actorType    ActorType              @default(SYSTEM)
+  actorUserId  String?                @db.Uuid
   note         String?
-  createdAt    DateTime              @default(now())
+  createdAt    DateTime               @default(now())
 
   assignment RiderAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
@@ -826,7 +826,7 @@ model RiderLocationPing {
   speedMps   Decimal? @db.Decimal(8, 2)
   recordedAt DateTime @default(now())
 
-  rider    RiderProfile  @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  rider    RiderProfile   @relation(fields: [riderId], references: [id], onDelete: Cascade)
   delivery OrderDelivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
 
   @@index([riderId, recordedAt])
@@ -922,14 +922,14 @@ model RecipeComponent {
 }
 
 model BranchInventory {
-  id            String   @id @default(uuid()) @db.Uuid
-  branchId      String   @db.Uuid
-  ingredientId  String   @db.Uuid
-  quantityOnHand Decimal @default(0) @db.Decimal(14, 4)
-  quantityReserved Decimal @default(0) @db.Decimal(14, 4)
-  reorderLevel  Decimal? @db.Decimal(14, 4)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id               String   @id @default(uuid()) @db.Uuid
+  branchId         String   @db.Uuid
+  ingredientId     String   @db.Uuid
+  quantityOnHand   Decimal  @default(0) @db.Decimal(14, 4)
+  quantityReserved Decimal  @default(0) @db.Decimal(14, 4)
+  reorderLevel     Decimal? @db.Decimal(14, 4)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
   branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
   ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
@@ -949,9 +949,9 @@ model InventoryMovement {
   reference     String?
   createdAt     DateTime                @default(now())
 
-  branch     Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  ingredient Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
-  order      Order?      @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  branch     Branch     @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  order      Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([branchId, ingredientId, createdAt])
   @@index([orderId])
@@ -975,16 +975,16 @@ model IdempotencyKey {
 }
 
 model OutboxEvent {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
   aggregateType String
   aggregateId   String
   eventType     String
   payload       Json
-  attempts      Int      @default(0)
-  availableAt   DateTime @default(now())
+  attempts      Int       @default(0)
+  availableAt   DateTime  @default(now())
   publishedAt   DateTime?
   lastError     String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([publishedAt, availableAt])
   @@index([aggregateType, aggregateId])

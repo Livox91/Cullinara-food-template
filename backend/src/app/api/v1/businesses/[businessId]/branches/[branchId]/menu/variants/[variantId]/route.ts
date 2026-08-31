@@ -25,3 +25,11 @@ export async function PUT(r: Request, c: C) {
     );
   });
 }
+export async function DELETE(r: Request, c: C) {
+  return apiHandler(r, async ({ requestId }) => {
+    const p = await c.params;
+    const branchId = id(p.branchId);
+    const { actor } = await menuActor(r, p.businessId, branchId);
+    return apiOk(await menuService.resetVariant(actor, branchId, id(p.variantId), requestId), requestId);
+  });
+}

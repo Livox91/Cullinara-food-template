@@ -6,6 +6,7 @@ import { businessManagementService } from "@/services/businessManagementService"
 import { BusinessModuleView } from "@/components/views/BusinessModuleView";
 import { canAccessPage } from "@/lib/businessAccess";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface Props {
   businessId: string;
@@ -14,20 +15,22 @@ interface Props {
 }
 
 export function BusinessPortalPageController({ businessId, page, entityId }: Props) {
+  const searchParams = useSearchParams();
+  const selectedBranchId = entityId ?? searchParams.get("branch") ?? undefined;
   const [data, setData] = useState<BusinessPortalData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    businessManagementService.getPortalData(businessId, entityId, controller.signal)
+    businessManagementService.getPortalData(businessId, selectedBranchId, controller.signal)
       .then((portalData) => setData(portalData))
       .catch((reason: unknown) => {
         if (reason instanceof DOMException && reason.name === "AbortError") return;
         setError(reason instanceof Error ? reason.message : "Unable to load the business portal.");
       });
     return () => controller.abort();
-  }, [businessId, entityId, revision]);
+  }, [businessId, selectedBranchId, revision]);
 
   if (error) return <div className="portal-loading portal-load-error"><h1>Page unavailable</h1><p>{error}</p></div>;
   if (!data) return <div className="portal-loading"><div className="portal-loader" /><p>Loading workspace…</p></div>;

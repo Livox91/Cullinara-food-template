@@ -21,3 +21,10 @@ export async function PATCH(r: Request, c: C) {
     );
   });
 }
+export async function DELETE(r: Request, c: C) {
+  return apiHandler(r, async ({ requestId }) => {
+    const p = await c.params;
+    const { actor } = await menuActor(r, p.businessId);
+    return apiOk(await menuService.deleteItem(actor, id(p.itemId), requestId), requestId);
+  });
+}

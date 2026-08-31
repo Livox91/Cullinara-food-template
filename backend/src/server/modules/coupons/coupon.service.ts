@@ -160,4 +160,16 @@ export const couponAdminService = {
   async disable(actor: BusinessActor, id: string, requestId: string) {
     return this.update(actor, id, { isActive: false }, requestId);
   },
+  async delete(actor: BusinessActor, id: string, requestId: string) {
+    const coupon = await getPrisma().coupon.findFirst({ where: { id, businessId: actor.businessId } });
+    if (!coupon) throw new NotFoundError("Coupon");
+    const redemptions = await getPrisma().couponRedemption.count({ where: { couponId: id } });
+    if (redemptions > 0)
+      throw new AppError("COUPON_HAS_REDEMPTIONS", "A redeemed coupon cannot be deleted; disable it instead.", 409);
+    return withTransaction({ actorType: "BUSINESS", userId: actor.userId }, async (tx) => {
+      await tx.coupon.delete({ where: { id } });
+      await auditRepository.write(tx, { businessId: actor.businessId, actorUserId: actor.userId, actorType: "BUSINESS", action: "coupon.delete", entityType: "Coupon", entityId: id, before: dto(coupon), requestId });
+      return { id, deleted: true };
+    });
+  },
 };

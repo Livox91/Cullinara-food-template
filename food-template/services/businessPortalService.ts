@@ -13,8 +13,8 @@ export const businessPortalService = {
     const role = String(access.membership.role);
     const capabilities = capabilitiesForRole(role);
     if (!capabilities.includes("order.read")) throw new Error("You do not have permission to view orders.");
-    const unrestrictedBranches = ["OWNER", "ADMIN"].includes(role);
     const allowedBranchIds = new Set<string>(access.membership.branchIds ?? []);
+    const unrestrictedBranches = ["OWNER", "ADMIN"].includes(role) || allowedBranchIds.size === 0;
     const branches = unrestrictedBranches ? allBranches : allBranches.filter((branch) => allowedBranchIds.has(branch.id));
     const pages = await Promise.all(branches.map((branch) => request<Row>(`businesses/${businessId}/branches/${branch.id}/orders?limit=100`).catch(() => ({ items: [] }))));
     const orders: BusinessOrder[] = pages.flatMap((page) => page.items ?? []).map((order: Row) => ({ id: order.publicId, orderNumber: String(order.orderNumber ?? order.publicId), branchId: order.branchId, customerName: order.customerName ?? "Customer", status: order.status as OrderStatus, fulfillmentType: order.fulfillmentType, paymentState: order.paymentStatus === "CAPTURED" ? "CAPTURED" : order.payments?.some((p: Row) => p.method === "COD") ? "COD" : "PENDING", paymentMethod: order.payments?.[0]?.method ?? order.paymentStatus, itemCount: (order.items ?? []).reduce((sum: number, item: Row) => sum + item.quantity, 0), total: Number(order.grandTotal), ageMinutes: Math.max(0, Math.floor((Date.now() - Date.parse(order.placedAt)) / 60000)), scheduledFor: order.scheduledFor ?? undefined, note: order.customerNote ?? undefined, riderState: order.delivery?.status ?? undefined, items: order.items }));

@@ -28,3 +28,11 @@ export async function PATCH(r: Request, c: C) {
     );
   });
 }
+export async function DELETE(r: Request, c: C) {
+  return apiHandler(r, async ({ requestId }) => {
+    const p = await requirePrincipal(r), x = await c.params,
+      businessId = z.string().uuid().parse(x.businessId),
+      actor = await requireBusinessActor(p, { businessId, capability: "business.manage" });
+    return apiOk(await couponAdminService.delete(actor, z.string().uuid().parse(x.couponId), requestId), requestId);
+  });
+}

@@ -27,12 +27,17 @@ function dateOnly(value: string): Date {
 }
 
 export const branchRepository = {
-  listAccessible(input: {
+  async listAccessible(input: {
     businessId: string;
     membershipId: string;
     role: MembershipRole;
   }) {
-    const unrestricted = input.role === "OWNER" || input.role === "ADMIN";
+    const unrestricted =
+      input.role === "OWNER" ||
+      input.role === "ADMIN" ||
+      (await getPrisma().staffBranchAccess.count({
+        where: { membershipId: input.membershipId },
+      })) === 0;
     return getPrisma().branch.findMany({
       where: {
         businessId: input.businessId,

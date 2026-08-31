@@ -4,10 +4,7 @@ const decimal = (value: { toString(): string } | null | undefined) =>
 export function mapAdminMenu(categories: any[]) {
   return categories.map((category) => ({
     ...category,
-    items: category.items.filter((item: any) => !item.isCombo || (item.comboComponents?.length >= 2 && item.comboComponents.every((component: any) => {
-      const override = component.variant.branchVariants?.[0];
-      return component.variant.isActive && component.variant.menuItem.isActive && (!override || (override.isAvailable && (!override.soldOutUntil || override.soldOutUntil <= now)));
-    }))).map((item: any) => ({
+    items: category.items.map((item: any) => ({
       ...item,
       variants: item.variants.map((variant: any) => ({
         ...variant,
@@ -41,7 +38,10 @@ export function mapPublicMenu(categories: any[], now = new Date()) {
     name: category.name,
     slug: category.slug,
     sortOrder: category.sortOrder,
-    items: category.items.map((item: any) => ({
+    items: category.items.filter((item: any) => !item.isCombo || (item.comboComponents?.length >= 2 && item.comboComponents.every((component: any) => {
+      const override = component.variant.branchVariants?.[0];
+      return component.variant.isActive && component.variant.menuItem.isActive && (!override || (override.isAvailable && (!override.soldOutUntil || override.soldOutUntil <= now)));
+    }))).map((item: any) => ({
       id: item.id,
       name: item.name,
       description: item.description,

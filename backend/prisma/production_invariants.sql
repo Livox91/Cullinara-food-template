@@ -449,17 +449,21 @@ BEGIN
   INSERT INTO "BranchInventory"
     ("id", "branchId", "ingredientId", "quantityOnHand", "quantityReserved", "createdAt", "updatedAt")
   VALUES
-    (gen_random_uuid(), NEW."branchId", NEW."ingredientId", NEW."deltaOnHand", NEW."deltaReserved", now(), now())
-  ON CONFLICT ("branchId", "ingredientId") DO UPDATE
+    (gen_random_uuid(), NEW."branchId", NEW."ingredientId", 0, 0, now(), now())
+  ON CONFLICT ("branchId", "ingredientId") DO NOTHING;
+
+  UPDATE "BranchInventory"
   SET
-    "quantityOnHand" = "BranchInventory"."quantityOnHand" + EXCLUDED."quantityOnHand",
-    "quantityReserved" = "BranchInventory"."quantityReserved" + EXCLUDED."quantityReserved",
+    "quantityOnHand" = "quantityOnHand" + NEW."deltaOnHand",
+    "quantityReserved" = "quantityReserved" + NEW."deltaReserved",
     "updatedAt" = now()
   WHERE
-    "BranchInventory"."quantityOnHand" + EXCLUDED."quantityOnHand" >= 0
-    AND "BranchInventory"."quantityReserved" + EXCLUDED."quantityReserved" >= 0
-    AND "BranchInventory"."quantityReserved" + EXCLUDED."quantityReserved"
-        <= "BranchInventory"."quantityOnHand" + EXCLUDED."quantityOnHand"
+    "branchId" = NEW."branchId"
+    AND "ingredientId" = NEW."ingredientId"
+    AND "quantityOnHand" + NEW."deltaOnHand" >= 0
+    AND "quantityReserved" + NEW."deltaReserved" >= 0
+    AND "quantityReserved" + NEW."deltaReserved"
+        <= "quantityOnHand" + NEW."deltaOnHand"
   RETURNING "id" INTO v_id;
 
   IF v_id IS NULL THEN
