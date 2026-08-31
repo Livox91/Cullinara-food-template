@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/backend";
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === "/business/login") return NextResponse.next();
 
   const hasSession = Boolean(
@@ -21,4 +21,3 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: ["/business/:path*"],
 };
-
