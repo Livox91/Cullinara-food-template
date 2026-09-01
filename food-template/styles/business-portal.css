@@ -643,6 +643,9 @@ button.summary-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px
 .data-entry-form label { color: var(--portal-muted); display: grid; gap: 6px; font-size: 9px; font-weight: 750; }
 .data-entry-form label.wide { grid-column: span 2; }
 .data-entry-form input, .data-entry-form select, .hours-editor-form input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--portal-border); border-radius: 8px; color: var(--portal-text); background: white; font: inherit; font-size: 10px; }
+.data-entry-form input[type="file"] { padding: 5px; }
+.data-entry-form input[type="file"]::file-selector-button { margin-right: 9px; padding: 5px 9px; border: 0; border-radius: 5px; color: var(--portal-accent); background: var(--portal-accent-soft); font: inherit; font-weight: 800; cursor: pointer; }
+.image-file-field small { color: var(--portal-muted); font-size: 8px; font-weight: 500; }
 .data-entry-form .form-submit { align-self: end; }
 .data-entry-form .module-notice, .data-entry-form .portal-inline-error { grid-column: 1 / -1; margin: 0; }
 .hours-editor-form { display: grid; gap: 8px; }

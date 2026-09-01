@@ -8,6 +8,7 @@ import type {
   BusinessPortalData,
 } from "@/models/businessPortal";
 import { apiRequest } from "@/services/apiClient";
+import { imageReferenceFromForm } from "@/services/imageUploadService";
 import { canAccessPage } from "@/lib/businessAccess";
 import { BusinessLocationPicker } from "@/components/business/BusinessLocationPicker";
 
@@ -199,40 +200,26 @@ export function BusinessDataActions({
         </Action>
         <Action
           title="Add menu item"
-          description="Create an item and its first sellable variant."
+          description="Create the product once. Add its sizes or options separately as variants."
         >
           <form
             className="data-entry-form"
             onSubmit={submit(async (f) => {
-              const item = await apiRequest<{ id: string }>(
-                `businesses/${businessId}/menu/items`,
-                {
-                  method: "POST",
-                  body: JSON.stringify({
-                    categoryId: value(f, "categoryId"),
-                    name: value(f, "name"),
-                    description: value(f, "description") || null,
-                    imageUrl: value(f, "imageUrl") || null,
-                    isActive: true,
-                    isCombo: false,
-                    sortOrder: 0,
-                  }),
-                },
-              );
-              await apiRequest(
-                `businesses/${businessId}/menu/items/${item.id}/variants`,
-                {
-                  method: "POST",
-                  body: JSON.stringify({
-                    sku: value(f, "sku"),
-                    name: value(f, "variantName"),
-                    basePrice: Number(value(f, "basePrice")),
-                    isDefault: true,
-                    isActive: true,
-                  }),
-                },
-              );
-            }, "Menu item and variant created.")}
+              await apiRequest(`businesses/${businessId}/menu/items`, {
+                method: "POST",
+                body: JSON.stringify({
+                  categoryId: value(f, "categoryId"),
+                  name: value(f, "name"),
+                  description: value(f, "description") || null,
+                  imageUrl:
+                    (await imageReferenceFromForm(businessId, f, "image")) ??
+                    null,
+                  isActive: true,
+                  isCombo: false,
+                  sortOrder: 0,
+                }),
+              });
+            }, "Menu item created. You can now add its variants.")}
           >
             <label>
               Category
@@ -247,7 +234,50 @@ export function BusinessDataActions({
             </label>
             <Field name="name" label="Item name" required />
             <Field name="description" label="Description" wide />
-            <Field name="imageUrl" label="Image URL" type="url" wide />
+            <ImageField name="image" label="Item image" wide />
+            <Submit pending={pending} label="Create item" />
+            {status}
+          </form>
+        </Action>
+        <Action
+          title="Add item variant"
+          description="Select an existing item, then add a size or other sellable option."
+        >
+          <form
+            className="data-entry-form"
+            onSubmit={submit(
+              (f) =>
+                apiRequest(
+                  `businesses/${businessId}/menu/items/${value(f, "variantItemId")}/variants`,
+                  {
+                    method: "POST",
+                    body: JSON.stringify({
+                      sku: value(f, "sku"),
+                      name: value(f, "variantName"),
+                      basePrice: Number(value(f, "basePrice")),
+                      prepMinutes: optionalNumber(f, "variantPrepMinutes"),
+                      isDefault: value(f, "variantIsDefault") === "true",
+                      isActive: true,
+                    }),
+                  },
+                ),
+              "Variant added to the selected item.",
+            )}
+          >
+            <label>
+              Menu item
+              <select name="variantItemId" required>
+                <option value="">Choose…</option>
+                {data.menu
+                  .filter((item) => item.itemType === "STANDARD")
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} · {item.variants.length} variant
+                      {item.variants.length === 1 ? "" : "s"}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <Field name="sku" label="SKU" required />
             <Field
               name="variantName"
@@ -262,7 +292,20 @@ export function BusinessDataActions({
               step="0.01"
               required
             />
-            <Submit pending={pending} label="Create item" />
+            <Field
+              name="variantPrepMinutes"
+              label="Prep minutes"
+              type="number"
+              min="0"
+            />
+            <label>
+              Default variant
+              <select name="variantIsDefault" defaultValue="true">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <Submit pending={pending} label="Add variant" />
             {status}
           </form>
         </Action>
@@ -272,7 +315,7 @@ export function BusinessDataActions({
         >
           <form
             className="data-entry-form bundle-builder-form"
-            onSubmit={submit((f) => {
+            onSubmit={submit(async (f) => {
               const components = data.menu
                 .filter((item) => item.itemType === "STANDARD")
                 .flatMap((item) => item.variants)
@@ -281,6 +324,11 @@ export function BusinessDataActions({
                   variantId: variant.id,
                   quantity: Number(value(f, `quantity-${variant.id}`) || 1),
                 }));
+              const imageUrl = await imageReferenceFromForm(
+                businessId,
+                f,
+                "bundleImage",
+              );
               return apiRequest(`businesses/${businessId}/menu/deals-combos`, {
                 method: "POST",
                 body: JSON.stringify({
@@ -288,7 +336,7 @@ export function BusinessDataActions({
                   kind: value(f, "bundleKind"),
                   name: value(f, "bundleName"),
                   description: value(f, "bundleDescription") || null,
-                  imageUrl: value(f, "bundleImageUrl") || null,
+                  imageUrl,
                   sku: value(f, "bundleSku"),
                   price: Number(value(f, "bundlePrice")),
                   prepMinutes: optionalNumber(f, "bundlePrepMinutes"),
@@ -332,7 +380,7 @@ export function BusinessDataActions({
               min="0"
             />
             <Field name="bundleDescription" label="Description" wide />
-            <Field name="bundleImageUrl" label="Image URL" type="url" wide />
+            <ImageField name="bundleImage" label="Deal or combo image" wide />
             <fieldset className="bundle-component-picker">
               <legend>Select included items</legend>
               {data.menu
@@ -851,19 +899,25 @@ export function BusinessDataActions({
           <form
             className="data-entry-form compact-form"
             onSubmit={submit(
-              (f) =>
-                apiRequest(`businesses/${businessId}/menu/items/${entityId}`, {
+              async (f) => {
+                const imageUrl = await imageReferenceFromForm(
+                  businessId,
+                  f,
+                  "image",
+                );
+                return apiRequest(`businesses/${businessId}/menu/items/${entityId}`, {
                   method: "PATCH",
                   body: JSON.stringify({
                     categoryId: value(f, "categoryId"),
                     name: value(f, "name"),
                     description: value(f, "description") || null,
-                    imageUrl: value(f, "imageUrl") || null,
+                    ...(imageUrl ? { imageUrl } : {}),
                     sortOrder: Number(value(f, "sortOrder") || 0),
                     itemType: value(f, "itemType"),
                     isActive: value(f, "isActive") === "true",
                   }),
-                }),
+                });
+              },
               "Menu item saved.",
             )}
           >
@@ -884,11 +938,10 @@ export function BusinessDataActions({
               defaultValue={item.description}
               wide
             />
-            <Field
-              name="imageUrl"
-              label="Image URL"
-              type="url"
-              defaultValue={item.imageUrl}
+            <ImageField
+              name="image"
+              label="Replace image"
+              currentUrl={item.imageUrl}
               wide
             />
             <Field
@@ -1090,6 +1143,29 @@ function Field({
     <label className={wide ? "wide" : ""}>
       {label}
       <input {...props} />
+    </label>
+  );
+}
+function ImageField({
+  label,
+  wide,
+  currentUrl,
+  ...props
+}: {
+  label: string;
+  wide?: boolean;
+  currentUrl?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "accept">) {
+  return (
+    <label className={`${wide ? "wide " : ""}image-file-field`}>
+      {label}
+      <input {...props} type="file" accept="image/*" />
+      <small>
+        {currentUrl
+          ? "Choose a file to replace the current image. "
+          : "PNG, JPEG, WebP, or another browser-supported image. "}
+        Converted to WebP before upload.
+      </small>
     </label>
   );
 }

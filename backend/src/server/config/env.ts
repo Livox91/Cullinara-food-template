@@ -25,6 +25,14 @@ const EnvironmentSchema = z.object({
   SMTP_PASS: z.string().min(1).optional(),
   SMTP_FROM_EMAIL: z.string().email().optional(),
   SMTP_FROM_NAME: z.string().min(1).default("Culinara"),
+  AWS_REGION: z.string().min(1).optional(),
+  S3_IMAGE_BUCKET: z.string().min(3).optional(),
+  S3_IMAGE_PUBLIC_BASE_URL: z.string().url().optional(),
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_FORCE_PATH_STYLE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type Environment = z.infer<typeof EnvironmentSchema>;

@@ -1,3 +1,5 @@
+import { resolveImageReference } from "@/server/modules/uploads/image-reference";
+
 const decimal = (value: { toString(): string } | null | undefined) =>
   value == null ? null : value.toString();
 
@@ -6,6 +8,7 @@ export function mapAdminMenu(categories: any[]) {
     ...category,
     items: category.items.map((item: any) => ({
       ...item,
+      imageUrl: resolveImageReference(item.imageUrl),
       variants: item.variants.map((variant: any) => ({
         ...variant,
         basePrice: decimal(variant.basePrice),
@@ -45,7 +48,7 @@ export function mapPublicMenu(categories: any[], now = new Date()) {
       id: item.id,
       name: item.name,
       description: item.description,
-      imageUrl: item.imageUrl,
+      imageUrl: resolveImageReference(item.imageUrl),
       isCombo: item.isCombo,
       itemType: item.itemType ?? (item.isCombo ? "COMBO" : "STANDARD"),
       comboComponents: (item.comboComponents ?? []).map((component: any) => ({

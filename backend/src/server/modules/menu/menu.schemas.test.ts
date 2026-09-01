@@ -31,3 +31,21 @@ describe("CreateDealComboSchema", () => {
     expect(() => CreateDealComboSchema.parse({ ...base, components: [{ variantId: uuid(2), quantity: 1 }, { variantId: uuid(2), quantity: 2 }] })).toThrow();
   });
 });
+
+describe("menu image references", () => {
+  it("accepts a stable WebP object reference", () => {
+    const result = CreateDealComboSchema.parse({
+      categoryId: uuid(1),
+      kind: "DEAL",
+      name: "Referenced image deal",
+      imageUrl: `/webp/businesses/${uuid(4)}/${uuid(5)}.webp`,
+      sku: "DEAL-IMAGE",
+      price: 799,
+      components: [
+        { variantId: uuid(2), quantity: 1 },
+        { variantId: uuid(3), quantity: 1 },
+      ],
+    });
+    expect(result.imageUrl).toMatch(/^\/webp\//);
+  });
+});

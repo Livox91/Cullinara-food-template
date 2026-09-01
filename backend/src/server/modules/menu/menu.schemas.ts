@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 const money = z.coerce.number().min(0).max(99_999_999.99);
+const imageReference = z
+  .string()
+  .trim()
+  .max(512)
+  .regex(/^\/[a-zA-Z0-9/_-]+\.webp$/);
+const imageValue = z.union([z.string().url().max(2048), imageReference]);
 
 export const CreateCategorySchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -20,7 +26,7 @@ export const CreateItemSchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().trim().min(1).max(160),
   description: z.string().trim().max(2000).nullish(),
-  imageUrl: z.string().url().max(2048).nullish(),
+  imageUrl: imageValue.nullish(),
   isActive: z.boolean().default(true),
   isCombo: z.boolean().default(false),
   sortOrder: z.number().int().min(0).default(0),
@@ -35,7 +41,7 @@ export const CreateDealComboSchema = z.object({
   kind: z.enum(["DEAL", "COMBO"]),
   name: z.string().trim().min(1).max(160),
   description: z.string().trim().max(2000).nullish(),
-  imageUrl: z.string().url().max(2048).nullish(),
+  imageUrl: imageValue.nullish(),
   sku: z.string().trim().min(1).max(80),
   price: money,
   prepMinutes: z.number().int().min(0).max(1440).nullish(),
